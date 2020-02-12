@@ -13,7 +13,13 @@ def main():
 	# Initialize the arguments to be used by the program
 	args = setArgs()
 
-	# Read the axis
+	# Read and return the axis
+	axis, epsilon, minor_rad, N_rotate, zeta_off = readAxis("/initFiles/axes/defaultAxis.txt",args.numZeta)
+
+	# Create the surface
+	surface = Surface(axis, args.numZeta, args.numTheta, epsilon, minor_rad, N_rotate, zeta_off)
+
+	
 
 
 
