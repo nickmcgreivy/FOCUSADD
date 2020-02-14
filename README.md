@@ -1,5 +1,5 @@
 # FOCUSADD
-Flexible Optimized Curves in Space with Automatic Differentiation (Duh)
+**F**lexible **O**ptimized **Cu**rves in **S**pace with **A**utomatic **D**ifferentiation (**D**uh)
 
 ## What is FOCUSADD?
 
