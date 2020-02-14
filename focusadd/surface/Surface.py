@@ -91,12 +91,22 @@ class Surface:
 		stheta = np.sin(theta)
 		ep = self.epsilon
 		drdz += self.axis.get_r1()
-		dv1dz = ...
-		dv2vz = ...
+		calpha = np.cos(self.alpha)
+		salpha = np.sin(self.alpha)
+		dNdz = ...
+		dBdz = ...
+		dalphadz = self.N_rotate / 2. - self.axis.get_torsion()
+		dv1dz = calpha[:,np.newaxis] * dNdz \
+				+ salpha[:,np.newaxis] * dBdz \
+				- self.axis.get_normal() * salpha[:,np.newaxis] * dalphadz[:,np.newaxis] \
+				+ calpha[:,np.newaxis] * dalphadz[:,np.newaxis] * self.axis.get_binormal()
+		dv2vz = -salpha[:,np.newaxis] * dNdz \
+				+ calpha[:,np.newaxis] * dBdz \
+				- calpha[:,np.newaxis] * dalphadz[:,np.newaxis] * self.axis.get_normal() \
+				- salpha[:,np.newaxis] * dalphadz[:,np.newaxis] * self.axis.get_binormal()
 
-		
-		drdz += sa * np.sqrt(ep) * self.dv1dz[:,np.newaxis,:] * ctheta[np.newaxis,:,np.newaxis]
-		drdz += sa * self.dv2dz[:,np.newaxis,:] * stheta[np.newaxis,:,np.newaxis] / np.sqrt(ep)
+		drdz += sa * np.sqrt(ep) * dv1dz[:,np.newaxis,:] * ctheta[np.newaxis,:,np.newaxis]
+		drdz += sa * dv2dz[:,np.newaxis,:] * stheta[np.newaxis,:,np.newaxis] / np.sqrt(ep)
 		self.drdz = drdz
 
 
