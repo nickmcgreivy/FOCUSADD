@@ -1,4 +1,4 @@
-import Axis as Axis
+from .Axis import Axis
 import numpy as np
 import math as m
 
@@ -19,8 +19,8 @@ class Surface:
 	def initialize_surface(self):
 		self.calc_frame()
 		self.calc_r()
-		self.calc_nn()
-		self.calc_sg()
+		#self.calc_nn()
+		#self.calc_sg()
 
 	def calc_alpha(self):
 		torsion = self.axis.get_torsion()
@@ -55,7 +55,7 @@ class Surface:
 		s=1.
 		sa = s * self.a
 		zeta = self.axis.get_zeta()
-		theta = np.linspace(0.,2.*PI,NT+1)
+		theta = np.linspace(0.,2.*PI,self.NT+1)
 		ctheta = np.cos(theta)
 		stheta = np.sin(theta)
 		ep = self.epsilon
@@ -68,11 +68,13 @@ class Surface:
 		return self.r
 
 	def calc_nn(self):
+		return NotImplementedError()
 
 	def get_nn(self):
 		return self.nn
 
 	def calc_sg(self):
+		return NotImplementedError()
 
 	def get_sg(self):
 		return self.sg
