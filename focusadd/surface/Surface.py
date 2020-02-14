@@ -19,8 +19,8 @@ class Surface:
 	def initialize_surface(self):
 		self.calc_frame()
 		self.calc_r()
-		#self.calc_nn()
-		#self.calc_sg()
+
+		self.calc_nn()
 
 	def calc_alpha(self):
 		torsion = self.axis.get_torsion()
@@ -64,17 +64,57 @@ class Surface:
 		r += sa * self.v2[:,np.newaxis,:] * stheta[np.newaxis,:,np.newaxis] / np.sqrt(ep)
 		self.r = r
 
+	def calc_drdt(self):
+		drdt = np.zeros((self.NZ+1,self.NT+1,3))
+		s=1.
+		sa = s * self.a
+		zeta = self.axis.get_zeta()
+		theta = np.linspace(0.,2.*PI,self.NT+1)
+		ctheta = np.cos(theta)
+		stheta = np.sin(theta)
+		ep = self.epsilon
+		drdt -= sa * np.sqrt(ep) * self.v1[:,np.newaxis,:] * stheta[np.newaxis,:,np.newaxis]
+		drdt += sa * self.v2[:,np.newaxis,:] * ctheta[np.newaxis,:,np.newaxis] / np.sqrt(ep)
+		self.drdt = drdt
+
+
+	def get_drdt(self):
+		return self.drdt
+
+	def calc_drdz(self):
+		drdz = np.zeros((self.NZ+1,self.NT+1,3))
+		s=1.
+		sa = s * self.a
+		zeta = self.axis.get_zeta()
+		theta = np.linspace(0.,2.*PI,self.NT+1)
+		ctheta = np.cos(theta)
+		stheta = np.sin(theta)
+		ep = self.epsilon
+		drdz += self.axis.get_r1()
+		dv1dz = ...
+		dv2vz = ...
+
+		
+		drdz += sa * np.sqrt(ep) * self.dv1dz[:,np.newaxis,:] * ctheta[np.newaxis,:,np.newaxis]
+		drdz += sa * self.dv2dz[:,np.newaxis,:] * stheta[np.newaxis,:,np.newaxis] / np.sqrt(ep)
+		self.drdz = drdz
+
+
+	def get_drdz(self):
+		return self.drdz
+
 	def get_r(self):
 		return self.r
 
 	def calc_nn(self):
-		return NotImplementedError()
+		self.calc_drdt()
+		self.calc_drdz()
+		nn = np.cross(self.drdt, self.drdz)#####
+		self.sg = np.linalg.norm(nn,axis=2)
+		self.nn = nn / self.sg
 
 	def get_nn(self):
 		return self.nn
-
-	def calc_sg(self):
-		return NotImplementedError()
 
 	def get_sg(self):
 		return self.sg

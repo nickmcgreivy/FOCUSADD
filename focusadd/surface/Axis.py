@@ -70,6 +70,9 @@ class Axis:
 		self.y1 = y1 
 		self.z1 = z1
 
+	def get_r1(self):
+		return np.concatenate((self.x1[:,np.newaxis],self.y1[:,np.newaxis],self.z1[:,np.newaxis]),axis=1)
+
 	def compute_x2y2z2(self):
 		x2 = np.zeros(self.N_zeta+1)
 		y2 = np.zeros(self.N_zeta+1)
