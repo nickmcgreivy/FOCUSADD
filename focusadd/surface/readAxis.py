@@ -1,5 +1,5 @@
 import jax.numpy as np
-from .Axis import Axis
+from Axis import Axis
 
 def readAxis(filename, N_zeta):
 	"""
