@@ -20,6 +20,8 @@ class Surface:
 		self.calc_sg()
 
 	def calc_alpha(self):
+		torsion = self.axis.get_torsion()
+		
 
 	def get_alpha(self):
 		return self.alpha
