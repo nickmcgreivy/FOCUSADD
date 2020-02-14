@@ -42,6 +42,9 @@ class Axis:
 	def get_xyz(self):
 		return self.x, self.y, self.z
 
+	def get_r(self):
+		return np.concatenate(self.x[:,np.newaxis],self.y[:,np.newaxis],self.z[:,np.newaxis],axis=1)
+
 	def compute_frenet(self):
 		""" 
 		Computes the tangent, normal, and binormal of the axis.

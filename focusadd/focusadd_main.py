@@ -1,5 +1,7 @@
 import argparse
-
+from surface.readAxis import readAxis
+import surface.Surface as Surface
+import surface.Axis as Axis
 
 def setArgs():
 	parser = argparse.ArgumentParser()
@@ -19,7 +21,7 @@ def main():
 	# Create the surface
 	surface = Surface(axis, args.numZeta, args.numTheta, epsilon, minor_rad, N_rotate, zeta_off)
 
-	
+
 
 
 
