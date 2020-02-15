@@ -21,8 +21,8 @@ class Axis:
 		self.compute_x1y1z1()
 		self.compute_x2y2z2()
 		self.compute_x3y3z3()
-		self.compute_frenet()
 		self.compute_dsdz()
+		self.compute_frenet()
 		self.compute_torsion()
 		self.compute_curvature()
 		self.compute_dBdz()
@@ -116,18 +116,16 @@ class Axis:
 		return self.tangent
 
 	def compute_tangent(self):
-		x1, y1, z1 = self.x1, self.y1, self.z1
-		a0 = np.sqrt(x1**2 + y1**2 + z1**2) # magnitude of first derivative of curve
-		foo= np.concatenate((x1[:,np.newaxis],y1[:,np.newaxis],z1[:,np.newaxis]),axis=1)
-		self.tangent = foo / a0[:,np.newaxis]
+		a0 = self.get_dsdz()
+		top = np.concatenate((self.x1[:,np.newaxis],self.y1[:,np.newaxis],self.z1[:,np.newaxis]),axis=1)
+		self.tangent = top / a0[:,np.newaxis]
 
 	def get_normal(self):
 		return self.normal
 
 	def compute_normal(self):
-		x2, y2, z2 = self.x2, self.y2, self.z2
-		a1 = x2 * self.tangent[:,0] + y2 * self.tangent[:,1] + z2 * self.tangent[:,2]  
-		N = np.concatenate((x2[:,np.newaxis],y2[:,np.newaxis],z2[:,np.newaxis]),axis=1) - self.tangent * a1[:,np.newaxis]
+		a1 = self.x2 * self.tangent[:,0] + self.y2 * self.tangent[:,1] + self.z2 * self.tangent[:,2]  
+		N = np.concatenate((self.x2[:,np.newaxis],self.y2[:,np.newaxis],self.z2[:,np.newaxis]),axis=1) - self.tangent * a1[:,np.newaxis]
 		norm = np.linalg.norm(N,axis=1)
 		self.normal = N / norm[:,np.newaxis]
 
@@ -169,7 +167,6 @@ class Axis:
 
 	def compute_dNdz(self):
 		self.dNdz = (- self.curvature[:,np.newaxis] * self.tangent + self.torsion[:,np.newaxis] * self.binormal ) * self.dsdz[:,np.newaxis]
-
 
 	def get_dNdz(self):
 		return self.dNdz

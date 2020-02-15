@@ -90,17 +90,17 @@ class Surface:
 		ctheta = np.cos(theta)
 		stheta = np.sin(theta)
 		ep = self.epsilon
-		drdz += self.axis.get_r1()
+		drdz += self.axis.get_r1()[:,np.newaxis,:]
 		calpha = np.cos(self.alpha)
 		salpha = np.sin(self.alpha)
 		dNdz = self.axis.get_dNdz()
 		dBdz = self.axis.get_dBdz()
-		dalphadz = self.N_rotate / 2. - self.axis.get_torsion()
+		dalphadz = self.NR / 2. - self.axis.get_torsion()
 		dv1dz = calpha[:,np.newaxis] * dNdz \
 				+ salpha[:,np.newaxis] * dBdz \
 				- self.axis.get_normal() * salpha[:,np.newaxis] * dalphadz[:,np.newaxis] \
 				+ calpha[:,np.newaxis] * dalphadz[:,np.newaxis] * self.axis.get_binormal()
-		dv2vz = -salpha[:,np.newaxis] * dNdz \
+		dv2dz = - salpha[:,np.newaxis] * dNdz \
 				+ calpha[:,np.newaxis] * dBdz \
 				- calpha[:,np.newaxis] * dalphadz[:,np.newaxis] * self.axis.get_normal() \
 				- salpha[:,np.newaxis] * dalphadz[:,np.newaxis] * self.axis.get_binormal()
@@ -121,7 +121,7 @@ class Surface:
 		self.calc_drdz()
 		nn = np.cross(self.drdt, self.drdz)#####
 		self.sg = np.linalg.norm(nn,axis=2)
-		self.nn = nn / self.sg
+		self.nn = nn / self.sg[:,:,np.newaxis]
 
 	def get_nn(self):
 		return self.nn
