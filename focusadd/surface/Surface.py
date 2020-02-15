@@ -19,7 +19,6 @@ class Surface:
 	def initialize_surface(self):
 		self.calc_frame()
 		self.calc_r()
-
 		self.calc_nn()
 
 	def calc_alpha(self):
