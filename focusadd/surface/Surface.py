@@ -93,8 +93,8 @@ class Surface:
 		drdz += self.axis.get_r1()
 		calpha = np.cos(self.alpha)
 		salpha = np.sin(self.alpha)
-		dNdz = ...
-		dBdz = ...
+		dNdz = self.axis.get_dNdz()
+		dBdz = self.axis.get_dBdz()
 		dalphadz = self.N_rotate / 2. - self.axis.get_torsion()
 		dv1dz = calpha[:,np.newaxis] * dNdz \
 				+ salpha[:,np.newaxis] * dBdz \

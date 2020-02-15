@@ -22,7 +22,11 @@ class Axis:
 		self.compute_x2y2z2()
 		self.compute_x3y3z3()
 		self.compute_frenet()
+		self.compute_dsdz()
 		self.compute_torsion()
+		self.compute_curvature()
+		self.compute_dBdz()
+		self.compute_dNdz()
 
 
 	def compute_xyz(self):
@@ -86,6 +90,9 @@ class Axis:
 		self.y2 = y2 
 		self.z2 = z2
 
+	def get_r2(self):
+		return np.concatenate((self.x2[:,np.newaxis],self.y2[:,np.newaxis],self.z2[:,np.newaxis]),axis=1)
+
 	def compute_x3y3z3(self):
 		x3 = np.zeros(self.N_zeta+1)
 		y3 = np.zeros(self.N_zeta+1)
@@ -98,6 +105,9 @@ class Axis:
 		self.x3 = x3
 		self.y3 = y3 
 		self.z3 = z3
+
+	def get_r3(self):
+		return np.concatenate((self.x3[:,np.newaxis],self.y3[:,np.newaxis],self.z3[:,np.newaxis]),axis=1)
 
 	def get_zeta(self):
 		return self.zeta
@@ -128,9 +138,9 @@ class Axis:
 		self.binormal = np.cross(self.tangent, self.normal)
 
 	def compute_torsion(self):
-		r1 = np.concatenate((self.x1[:,np.newaxis],self.y1[:,np.newaxis],self.z1[:,np.newaxis]),axis=1)
-		r2 = np.concatenate((self.x2[:,np.newaxis],self.y2[:,np.newaxis],self.z2[:,np.newaxis]),axis=1)
-		r3 = np.concatenate((self.x3[:,np.newaxis],self.y3[:,np.newaxis],self.z3[:,np.newaxis]),axis=1)
+		r1 = self.get_r1()
+		r2 = self.get_r2()
+		r3 = self.get_r3()
 		cross12 = np.cross(r1, r2)
 		top = cross12[:,0] * r3[:,0] + cross12[:,1] * r3[:,1] + cross12[:,2] * r3[:,2]
 		bottom = np.linalg.norm(cross12,axis=1)
@@ -139,7 +149,37 @@ class Axis:
 	def get_torsion(self):
 		return self.torsion
 
+	def compute_curvature(self):
+		r1 = self.get_r1()
+		r2 = self.get_r2()
+		cross12 = np.cross(r1, r2)
+		top = np.linalg.norm(cross12, axis=1)
+		bottom = np.linalg.norm(r1,axis=1)
+		self.curvature = top / bottom
 
+	def get_curvature(self):
+		return self.curvature
+
+	def compute_dsdz(self):
+		x1, y1, z1 = self.x1, self.y1, self.z1
+		self.dsdz = np.sqrt(x1**2 + y1**2 + z1**2) # magnitude of first derivative of curve
+
+	def get_dsdz(self):
+		return self.dsdz
+
+	def compute_dNdz(self):
+		self.dNdz = (- self.curvature[:,np.newaxis] * self.tangent + self.torsion[:,np.newaxis] * self.binormal ) * self.dsdz[:,np.newaxis]
+
+
+	def get_dNdz(self):
+		return self.dNdz
+
+	def compute_dBdz(self):
+		self.dBdz = - self.torsion[:,np.newaxis] * self.normal * self.dsdz[:,np.newaxis]
+
+
+	def get_dBdz(self):
+		return self.dBdz
 
 
 
