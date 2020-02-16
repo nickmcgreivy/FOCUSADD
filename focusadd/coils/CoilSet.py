@@ -30,7 +30,7 @@ class CoilSet:
 			self.NR = args_dict['numRotate']
 			r_central = surface.calc_r_coils(self.NC,self.NS,self.rc) # Position of central coil
 			self.fc = self.compute_coil_fourierSeries(r_central)
-			self.fr = np.zeros((6,self.NC,self.NFR))
+			self.fr = np.zeros((2,self.NC,self.NFR))
 		else:
 			raise Exception("No file or args_dict passed to initialize coil set. ")
 		self.theta = np.linspace(0,2*PI,self.NS+1)
@@ -125,7 +125,7 @@ class CoilSet:
 			x1 += - m * xc[:,np.newaxis,m] * sarg[np.newaxis,:] + m * xs[:,np.newaxis,m] * carg[np.newaxis,:]
 			y1 += - m * yc[:,np.newaxis,m] * sarg[np.newaxis,:] + m * ys[:,np.newaxis,m] * carg[np.newaxis,:]
 			z1 += - m * zc[:,np.newaxis,m] * sarg[np.newaxis,:] + m * zs[:,np.newaxis,m] * carg[np.newaxis,:]
-		self.r1 = np.concatenate((x[:,:,np.newaxis],y[:,:,np.newaxis],z[:,:,np.newaxis]),axis=2)
+		self.r1 = np.concatenate((x1[:,:,np.newaxis],y1[:,:,np.newaxis],z1[:,:,np.newaxis]),axis=2)
 
 	def compute_x2y2z2(self):
 		xc, yc, zc, xs, ys, zs = self.unpack_fourier(self.fc)
@@ -140,7 +140,7 @@ class CoilSet:
 			x2 += - m2 * xc[:,np.newaxis,m] * carg[np.newaxis,:] - m2 * xs[:,np.newaxis,m] * sarg[np.newaxis,:]
 			y2 += - m2 * yc[:,np.newaxis,m] * carg[np.newaxis,:] - m2 * ys[:,np.newaxis,m] * sarg[np.newaxis,:]
 			z2 += - m2 * zc[:,np.newaxis,m] * carg[np.newaxis,:] - m2 * zs[:,np.newaxis,m] * sarg[np.newaxis,:]
-		self.r1 = np.concatenate((x[:,:,np.newaxis],y[:,:,np.newaxis],z[:,:,np.newaxis]),axis=2)
+		self.r2 = np.concatenate((x2[:,:,np.newaxis],y2[:,:,np.newaxis],z2[:,:,np.newaxis]),axis=2)
 
 	def compute_x3y3z3(self):
 		xc, yc, zc, xs, ys, zs = self.unpack_fourier(self.fc)
@@ -155,7 +155,7 @@ class CoilSet:
 			x3 += m3 * xc[:,np.newaxis,m] * sarg[np.newaxis,:] - m3 * xs[:,np.newaxis,m] * carg[np.newaxis,:]
 			y3 += m3 * yc[:,np.newaxis,m] * sarg[np.newaxis,:] - m3 * ys[:,np.newaxis,m] * carg[np.newaxis,:]
 			z3 += m3 * zc[:,np.newaxis,m] * sarg[np.newaxis,:] - m3 * zs[:,np.newaxis,m] * carg[np.newaxis,:]
-		self.r1 = np.concatenate((x[:,:,np.newaxis],y[:,:,np.newaxis],z[:,:,np.newaxis]),axis=2)
+		self.r3 = np.concatenate((x3[:,:,np.newaxis],y3[:,:,np.newaxis],z3[:,:,np.newaxis]),axis=2)
 
 	def compute_dsdt(self):
 		self.dsdt = np.linalg.norm(self.r1,axis=2)
@@ -165,8 +165,8 @@ class CoilSet:
 
 	def compute_length(self):
 		dt = 2. * PI / self.NS
-		integrand = dt * self.dsdt
-		self.length = np.trapz(integrand,axis=1)
+		integrand = dt * self.dsdt[:,0:-1]
+		self.length = np.sum(integrand,axis=1)
 
 	def get_length(self):
 		return self.length
@@ -217,7 +217,31 @@ class CoilSet:
 		return self.binormal
 
 	def compute_r(self):
-		pass
+		self.compute_frame()
+		r = np.zeros((self.NC,self.NS+1,self.NNR,self.NBR,3))
+		r += self.r_central[:,:,np.newaxis,np.newaxis,:]
+		for n in range(self.NNR):
+			for b in range(self.NBR):
+				r = index_add(r,index[:,:,n,b,:], (n - .5*(self.NNR-1)) * self.ln * self.v1 + (b - .5*(self.NBR-1)) * self.lb * self.v2)
+		self.r = r
+
+	def compute_frame(self):
+		alpha = np.zeros((self.NC, self.NS+1))
+		alpha += self.theta * self.NR / 2
+		rc = self.fr[0]
+		rs = self.fr[1]
+		for m in range(self.NFR):
+			arg = self.theta * m
+			carg = np.cos(arg)
+			sarg = np.sin(arg)
+			alpha += rc[:,np.newaxis,m] * carg[np.newaxis,:] + rs[:,np.newaxis,m] * sarg[np.newaxis,:]
+		calpha = np.cos(alpha)
+		salpha = np.sin(alpha)
+		self.v1 = calpha[:,:,np.newaxis] * self.normal + salpha[:,:,np.newaxis] * self.binormal
+		self.v2 = -salpha[:,:,np.newaxis] * self.normal + calpha[:,:,np.newaxis] * self.binormal
+		
+	def get_frame(self):
+		return self.v1, self.v2
 
 	def get_r(self):
 		return self.r
