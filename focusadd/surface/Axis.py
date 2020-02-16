@@ -174,7 +174,6 @@ class Axis:
 	def compute_dBdz(self):
 		self.dBdz = - self.torsion[:,np.newaxis] * self.normal * self.dsdz[:,np.newaxis]
 
-
 	def get_dBdz(self):
 		return self.dBdz
 

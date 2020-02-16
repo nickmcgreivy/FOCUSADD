@@ -1,16 +1,52 @@
+import jax.jumpy as np
+import math as m
 
+PI = m.pi
 
 class CoilSet:
 
-	def __init__(self,input_file, ):
+	def __init__(self,axis,surface,input_file=None,args=None):
 		if input_file is not None:
 			# READ IN HDF5 FORMAT 
-		else:
+			# DON'T IMPLEMENT YET
+		elif args is not None:
 			# INITIALIZE COILS TO DEFAULT VALUES
+			self.NC = int(args.numCoils)
+			self.NS = int(args.numSegments)
+			self.NF = int(args.numFourierCoils)
+			self.NFR = int(args.numFourierRotate)
+			self.ln = float(args.lengthNormal)
+			self.lb = float(args.lengthBinormal)
+			self.NNR = int(args.numNormalRotate)
+			self.NBR = int(args.numBinormalRotate)
+			self.rc = float(args.radiusCoil)
+			self.r_central = surface.calc_r_coils(self.NC,self.NS,self.rc) # Position of central coil
+		else: 
+			raise Exception("Coils need argument or file to be initialized. ")
+		#params = ...
+		#self.set_params(params)
+
+	def get_r_central(self):
+		return self.r_central
+
+	def set_params(self, params):
+		# UNPACK PARAMS
+
+
+		# COMPUTE THINGS
 		self.compute_r()
+		self.compute_x1y1z1()
+		self.compute_x2y2z2()
+		self.compute_x3y3z3()
+		self.compute_dsdz()
+		self.compute_frenet()
+		self.compute_torsion()
+		self.compute_curvature()
+		self.compute_integrated_torsion()
+		self.compute_integrated_curvature()
 
 	def compute_r(self):
-
+		pass
 
 	def get_r(self):
 		return self.r
@@ -20,8 +56,10 @@ class CoilSet:
 
 	def write_coils(self, output_file):
 		""" Write coils in HDF5 output format"""
+		pass
 
 	def calc_length(self):
+		pass
 
 
 	def compute_frenet(self):
@@ -85,6 +123,7 @@ class CoilSet:
 		self.torsion = top / bottom
 
 	def compute_integrated_torsion(self):
+		pass
 
 	def compute_curvature(self):
 		r1 = self.get_r1()
@@ -95,6 +134,7 @@ class CoilSet:
 		self.curvature = top / bottom
 
 	def compute_integrated_curvature(self):
+		pass
 
 	def compute_dsdz(self):
 		x1, y1, z1 = self.x1, self.y1, self.z1
