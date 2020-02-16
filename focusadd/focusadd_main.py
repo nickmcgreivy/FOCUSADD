@@ -4,6 +4,8 @@ from surface.Surface import Surface
 from surface.Axis import Axis
 from coils.CoilSet import CoilSet
 import jax.numpy as np
+from focusadd.lossFunctions.DefaultLoss import DefaultLoss
+from focusadd.optimizers.SGD import SGD
 
 def setArgs():
 	parser = argparse.ArgumentParser()
@@ -21,6 +23,7 @@ def setArgs():
 	parser.add_argument("-rc","--radiusCoil", help="Radius of coils", default=2.0)
 	parser.add_argument("-rs","--radiusSurface", help="Radius of surface", default=1.0)
 	parser.add_argument("-nr","--numRotate", help="Number of rotations of each finite-build coil", default=0)
+	parser.add_argument("-lr","--learningRate", help="Learning Rate of SGD, ODEFlow, Newtons Method", default=0.1)
 	return parser.parse_args()
 
 
@@ -46,17 +49,31 @@ def main():
 	args_dict['radiusCoil'] = float(args.radiusCoil)
 	args_dict['numRotate'] = int(args.numRotate)
 
-	filename = 'coils/saved/testCoils.hdf5'
+	filename = 'coils/saved/defaultCoils.hdf5'
+	output_file = 'coils/saved/resultCoils.hdf5'
 
-	coilSet = CoilSet(surface,args_dict=args_dict)
-	coilSet.write_coils(filename)
+	coilSet = CoilSet(surface,input_file=filename)
+	params = coilSet.get_params()
 
-	coilSet2 = CoilSet(surface,input_file=filename)
-	fc, fr = coilSet2.get_params()
-	#fc = np.asarray(fc)
-	#fr = np.asarray(fr)
-	print(fc)
-	print(fr)
+	# IMPORT LOSS FUNCTION -> NEED LOSSFUNCTIONS TO HAVE SOME STANDARD API
+	l = DefaultLoss()
+
+	# IMPORT OPTIMIZER -> NEED OPTIMIZERS TO HAVE SOME STANDARD API
+	optim = SGD()
+
+	for i in range(args.numIter):
+		new_params, loss = optim.step(coilSet.get_params())
+		coilSet.set_params(new_params)
+		print(loss)
+
+	coilSet.write(output_file)
+
+
+
+
+
+
+
 
 
 

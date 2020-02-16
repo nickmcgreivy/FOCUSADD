@@ -65,7 +65,7 @@ class CoilSet:
 	def get_params(self):
 		return self.fc, self.fr
 
-	def write_coils(self, output_file):
+	def write(self, output_file):
 		""" Write coils in HDF5 output format"""
 		with tb.open_file(output_file, 'w') as f:
 			metadata = numpy.dtype([('NC', int), ('NS', int),('NF', int),('NFR',int),('ln',float),('lb',float),('NNR',int),('NBR',int),('rc',float),('NR',int)])
