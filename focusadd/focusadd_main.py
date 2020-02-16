@@ -4,8 +4,8 @@ from surface.Surface import Surface
 from surface.Axis import Axis
 from coils.CoilSet import CoilSet
 import jax.numpy as np
-#from lossFunctions.DefaultLoss import DefaultLoss
-#from optimizers.SGD import SGD
+from lossFunctions.DefaultLoss import DefaultLoss
+from optimizers.GD import GD
 
 def setArgs():
 	parser = argparse.ArgumentParser()
@@ -54,14 +54,14 @@ def main():
 	coilSet = CoilSet(surface,input_file=filename)
 	params = coilSet.get_params()
 	# IMPORT LOSS FUNCTION -> NEED LOSSFUNCTIONS TO HAVE SOME STANDARD API
-	#l = DefaultLoss(surface, coilSet)
+	l = DefaultLoss(surface, coilSet)
 	# IMPORT OPTIMIZER -> NEED OPTIMIZERS TO HAVE SOME STANDARD API
-	#optim = SGD(l, learningRate=args.learningRate)
+	optim = GD(l, learningRate=args.learningRate)
 
 	# PERFORM OPTIMIZATION
-	#for i in range(args.numIter):
-	#	loss_val, params = optim.step(params)
-	#	print(loss_val)
+	for i in range(args.numIter):
+		loss_val, params = optim.step(params) # loss_val is for old params, params is new params
+		print(loss_val)
 	coilSet.set_params(params)
 	#coilSet.write(output_file)
 

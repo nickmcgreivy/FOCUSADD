@@ -34,6 +34,7 @@ class CoilSet:
 		else:
 			raise Exception("No file or args_dict passed to initialize coil set. ")
 		self.theta = np.linspace(0,2*PI,self.NS+1)
+		self.I = np.ones(self.NC)
 		self.set_params((self.fc, self.fr))
 
 	def compute_coil_fourierSeries(self,r_central):
@@ -222,7 +223,7 @@ class CoilSet:
 		r += self.r_central[:,:,np.newaxis,np.newaxis,:]
 		for n in range(self.NNR):
 			for b in range(self.NBR):
-				r = index_add(r,index[:,:,n,b,:], (n - .5*(self.NNR-1)) * self.ln * self.v1 + (b - .5*(self.NBR-1)) * self.lb * self.v2)
+				r = index_add(r,index[:,:,n,b,:], (n - .5*(self.NNR-1)) * self.ln * self.v1 + (b - .5*(self.NBR-1)) * self.lb * self.v2gi)
 		self.r = r
 
 	def compute_frame(self):
@@ -245,6 +246,9 @@ class CoilSet:
 
 	def get_r(self):
 		return self.r
+
+	def get_I(self):
+		return self.I
 
 	"""
 	def compute_torsion(self):
