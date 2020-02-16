@@ -23,7 +23,7 @@ def setArgs():
 	parser.add_argument("-rc","--radiusCoil", help="Radius of coils", default=2.0)
 	parser.add_argument("-rs","--radiusSurface", help="Radius of surface", default=1.0)
 	parser.add_argument("-nr","--numRotate", help="Number of rotations of each finite-build coil", default=0)
-	parser.add_argument("-lr","--learningRate", help="Learning Rate of SGD, ODEFlow, Newtons Method", default=0.1)
+	parser.add_argument("-lr","--learningRate", help="Learning Rate of SGD, ODEFlow, Newtons Method", default=0.05)
 	return parser.parse_args()
 
 

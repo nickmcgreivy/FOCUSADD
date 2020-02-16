@@ -16,6 +16,5 @@ class LossFunction:
 		We can eventually sum over this array to get the total integral over the surface. 
 
 		"""
-
 		pass
 
