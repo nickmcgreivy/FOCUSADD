@@ -1,4 +1,5 @@
 import jax.numpy as np
+from jax.ops import index, index_add
 import math as m
 
 PI = m.pi
@@ -23,18 +24,18 @@ class CoilSet:
 			self.rc = args_dict['radiusCoil']
 			self.NR = args_dict['numRotate']
 			self.r_central = surface.calc_r_coils(self.NC,self.NS,self.rc) # Position of central coil
+			self.fc = self.compute_coil_fourierSeries(self.r_central)
+			self.fr = np.zeros((self.NC,self.NFR))
 		else:
 			raise Exception("No file or args_dict passed to initialize coil set. ")
-		#params = ...
-		#self.set_params(params)
+		#self.set_params((self.fc, self.fr))
 
 	def get_r_central(self):
 		return self.r_central
 
 	def set_params(self, params):
 		# UNPACK PARAMS
-
-
+		self.fc, self.fr = params
 		# COMPUTE THINGS
 		self.compute_r()
 		self.compute_x1y1z1()
@@ -46,6 +47,9 @@ class CoilSet:
 		self.compute_curvature()
 		self.compute_integrated_torsion()
 		self.compute_integrated_curvature()
+
+	def get_params(self):
+		return (self.fc, self.fr)
 
 	def compute_r(self):
 		pass
@@ -62,6 +66,33 @@ class CoilSet:
 
 	def calc_length(self):
 		pass
+
+	def compute_coil_fourierSeries(self,r_central):
+		x = r_central[:,:,0] # NC x NS
+		y = r_central[:,:,1]
+		z = r_central[:,:,2]
+		xc = np.zeros(self.NC,self.NF)
+		yc = np.zeros(self.NC,self.NF)
+		zc = np.zeros(self.NC,self.NF)
+		xs = np.zeros(self.NC,self.NF)
+		ys = np.zeros(self.NC,self.NF)
+		zs = np.zeros(self.NC,self.NF)
+		xc = index_add(xc,index[:,0],np.sum(x,axis=1) / self.NS)
+		yc = index_add(yc,index[:,0],np.sum(y,axis=1) / self.NS)
+		zc = index_add(zc,index[:,0],np.sum(z,axis=1) / self.NS)
+		theta = np.linspace(0,2*PI,self.NS+1)[0:self.NS]
+		for m in range(1,self.NF):
+			xc = index_add(xc,index[:,m],-2.0 * np.sum(x * np.cos(m * theta), axis=1) / self.NS )
+			yc = index_add(yc,index[:,m],-2.0 * np.sum(y * np.cos(m * theta), axis=1) / self.NS )
+			zc = index_add(zc,index[:,m],-2.0 * np.sum(z * np.cos(m * theta), axis=1) / self.NS )
+			xs = index_add(xs,index[:,m],-2.0 * np.sum(x * np.sin(m * theta), axis=1) / self.NS )
+			ys = index_add(ys,index[:,m],-2.0 * np.sum(y * np.sin(m * theta), axis=1) / self.NS )
+			zs = index_add(zs,index[:,m],-2.0 * np.sum(z * np.sin(m * theta), axis=1) / self.NS )
+		return [xc,yc,zc,xs,yz,zs]
+
+
+
+
 
 
 	def compute_frenet(self):
