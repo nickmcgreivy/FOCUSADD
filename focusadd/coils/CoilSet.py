@@ -1,28 +1,30 @@
-import jax.jumpy as np
+import jax.numpy as np
 import math as m
 
 PI = m.pi
 
 class CoilSet:
 
-	def __init__(self,axis,surface,input_file=None,args=None):
+	def __init__(self,surface,input_file=None,args_dict=None):
 		if input_file is not None:
+			pass
 			# READ IN HDF5 FORMAT 
 			# DON'T IMPLEMENT YET
-		elif args is not None:
+		elif args_dict is not None:
 			# INITIALIZE COILS TO DEFAULT VALUES
-			self.NC = int(args.numCoils)
-			self.NS = int(args.numSegments)
-			self.NF = int(args.numFourierCoils)
-			self.NFR = int(args.numFourierRotate)
-			self.ln = float(args.lengthNormal)
-			self.lb = float(args.lengthBinormal)
-			self.NNR = int(args.numNormalRotate)
-			self.NBR = int(args.numBinormalRotate)
-			self.rc = float(args.radiusCoil)
+			self.NC = args_dict['numCoils']
+			self.NS = args_dict['numSegments']
+			self.NF = args_dict['numFourierCoils']
+			self.NFR = args_dict['numFourierRotate']
+			self.ln = args_dict['lengthNormal']
+			self.lb = args_dict['lengthBinormal']
+			self.NNR = args_dict['numNormalRotate']
+			self.NBR = args_dict['numBinormalRotate']
+			self.rc = args_dict['radiusCoil']
+			self.NR = args_dict['numRotate']
 			self.r_central = surface.calc_r_coils(self.NC,self.NS,self.rc) # Position of central coil
-		else: 
-			raise Exception("Coils need argument or file to be initialized. ")
+		else:
+			raise Exception("No file or args_dict passed to initialize coil set. ")
 		#params = ...
 		#self.set_params(params)
 

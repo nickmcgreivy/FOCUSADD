@@ -62,17 +62,18 @@ class Surface:
 		self.r = r
 
 	def calc_r_coils(self,num_coils,num_segments,coil_radius):
-		r = np.zeros((num_coils,num_segments,3))
+		r = np.zeros((num_coils,num_segments+1,3))
 		# assume s = 1
 		sa = coil_radius * self.a
-		zeta = self.axis.get_zeta()[0:self.NZ:self.NZ/num_coils]
+		spacing = int(self.NZ/num_coils)
+		zeta = self.axis.get_zeta()[0:self.NZ:spacing]
 		theta = np.linspace(0.,2.*PI,num_segments+1)
 		ctheta = np.cos(theta)
 		stheta = np.sin(theta)
 		ep = self.epsilon
-		r += self.axis.get_r()[0:self.NZ:self.NZ/num_coils,np.newaxis,:]
-		r += sa * np.sqrt(ep) * self.v1[0:self.NZ:self.NZ/num_coils,np.newaxis,:] * ctheta[np.newaxis,:,np.newaxis]
-		r += sa * self.v2[0:self.NZ:self.NZ/num_coils,np.newaxis,:] * stheta[np.newaxis,:,np.newaxis] / np.sqrt(ep)
+		r += self.axis.get_r()[0:self.NZ:spacing,np.newaxis,:]
+		r += sa * np.sqrt(ep) * self.v1[0:self.NZ:spacing,np.newaxis,:] * ctheta[np.newaxis,:,np.newaxis]
+		r += sa * self.v2[0:self.NZ:spacing,np.newaxis,:] * stheta[np.newaxis,:,np.newaxis] / np.sqrt(ep)
 		return r
 		
 

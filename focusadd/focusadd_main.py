@@ -2,7 +2,7 @@ import argparse
 from surface.readAxis import readAxis
 from surface.Surface import Surface
 from surface.Axis import Axis
-from surface.CoilSet import CoilSet
+from coils.CoilSet import CoilSet
 
 def setArgs():
 	parser = argparse.ArgumentParser()
@@ -19,6 +19,7 @@ def setArgs():
 	parser.add_argument("-lb","--lengthBinormal", help="Length between each coil in the (rotated) binormal direction", default=0.01)
 	parser.add_argument("-rc","--radiusCoil", help="Radius of coils", default=2.0)
 	parser.add_argument("-rs","--radiusSurface", help="Radius of surface", default=1.0)
+	parser.add_argument("-nr","--numRotate", help="Number of rotations of each finite-build coil", default=0)
 	return parser.parse_args()
 
 
@@ -32,7 +33,21 @@ def main():
 	# Create the surface
 	surface = Surface(axis, int(args.numZeta), int(args.numTheta), epsilon, minor_rad, N_rotate, zeta_off,float(args.radiusSurface))
 
-	coilSet = CoilSet(axis,surface,args=setArgs)
+	args_dict = {}
+	args_dict['numCoils'] = int(args.numCoils)
+	args_dict['numSegments'] = int(args.numSegments)
+	args_dict['numFourierCoils'] = int(args.numFourierCoils)
+	args_dict['numFourierRotate'] = int(args.numFourierRotate)
+	args_dict['lengthNormal'] = float(args.lengthNormal)
+	args_dict['lengthBinormal'] = float(args.lengthBinormal)
+	args_dict['numNormalRotate'] = int(args.numNormalRotate)
+	args_dict['numBinormalRotate'] = int(args.numBinormalRotate)
+	args_dict['radiusCoil'] = float(args.radiusCoil)
+	args_dict['numRotate'] = int(args.numRotate)
+
+
+	coilSet = CoilSet(axis,surface,args_dict=args_dict)
+	print("working")
 
 
 
