@@ -3,6 +3,7 @@ from surface.readAxis import readAxis
 from surface.Surface import Surface
 from surface.Axis import Axis
 from coils.CoilSet import CoilSet
+import jax.numpy as np
 
 def setArgs():
 	parser = argparse.ArgumentParser()
@@ -45,9 +46,18 @@ def main():
 	args_dict['radiusCoil'] = float(args.radiusCoil)
 	args_dict['numRotate'] = int(args.numRotate)
 
+	filename = 'coils/saved/testCoils.hdf5'
 
-	coilSet = CoilSet(axis,surface,args_dict=args_dict)
-	print("working")
+	coilSet = CoilSet(surface,args_dict=args_dict)
+	coilSet.write_coils(filename)
+
+	coilSet2 = CoilSet(surface,input_file=filename)
+	fc, fr = coilSet2.get_params()
+	#fc = np.asarray(fc)
+	#fr = np.asarray(fr)
+	print(fc)
+	print(fr)
+
 
 
 
