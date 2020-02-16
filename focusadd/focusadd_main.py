@@ -51,21 +51,18 @@ def main():
 
 	filename = 'coils/saved/defaultCoils.hdf5'
 	output_file = 'coils/saved/resultCoils.hdf5'
-
 	coilSet = CoilSet(surface,input_file=filename)
 	params = coilSet.get_params()
-
 	# IMPORT LOSS FUNCTION -> NEED LOSSFUNCTIONS TO HAVE SOME STANDARD API
-	l = DefaultLoss()
-
+	l = DefaultLoss(surface, coilSet)
 	# IMPORT OPTIMIZER -> NEED OPTIMIZERS TO HAVE SOME STANDARD API
-	optim = SGD()
+	optim = SGD(l, learningRate=args.learningRate)
 
+	# PERFORM OPTIMIZATION
 	for i in range(args.numIter):
-		new_params, loss = optim.step(coilSet.get_params())
-		coilSet.set_params(new_params)
-		print(loss)
-
+		loss_val, params = optim.step(params)
+		print(loss_val)
+	coilSet.set_params(params)
 	coilSet.write(output_file)
 
 
