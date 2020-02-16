@@ -33,6 +33,7 @@ class CoilSet:
 			self.fr = np.zeros((6,self.NC,self.NFR))
 		else:
 			raise Exception("No file or args_dict passed to initialize coil set. ")
+		self.theta = np.linspace(0,2*PI,self.NS+1)
 		self.set_params((self.fc, self.fr))
 
 	def compute_coil_fourierSeries(self,r_central):
@@ -74,42 +75,107 @@ class CoilSet:
 	def set_params(self, params):
 		# UNPACK PARAMS
 		self.fc, self.fr = params
-		# COMPUTE COIL STUFF
+		# COMPUTE COIL VARIABLES
 		self.compute_r_central()
-		self.compute_dsdt()
-		self.compute_length()
 		self.compute_x1y1z1()
 		self.compute_x2y2z2()
 		self.compute_x3y3z3()
+		self.compute_dsdt()
+		self.compute_length()
+		self.compute_total_length()
 		self.compute_frenet()
-		self.compute_r() # finite build
+		self.compute_r() # finite build position
+
+	def unpack_fourier(self,f):
+		xc = f[0]
+		yc = f[1]
+		zc = f[2]
+		xs = f[3]
+		ys = f[4]
+		zs = f[5]
+		return xc, yc, zc, xs, ys, zs
+
 
 	def compute_r_central(self):
-		pass
+		xc, yc, zc, xs, ys, zs = self.unpack_fourier(self.fc)
+		x = np.zeros((self.NC,self.NS+1))
+		y = np.zeros((self.NC,self.NS+1))
+		z = np.zeros((self.NC,self.NS+1))
+		for m in range(self.NF):
+			arg = m * self.theta
+			carg = np.cos(arg)
+			sarg = np.sin(arg)
+			x +=  xc[:,np.newaxis,m] * carg[np.newaxis,:] + xs[:,np.newaxis,m] * sarg[np.newaxis,:]
+			y += yc[:,np.newaxis,m] * carg[np.newaxis,:] + ys[:,np.newaxis,m] * sarg[np.newaxis,:]
+			z += zc[:,np.newaxis,m] * carg[np.newaxis,:] + zs[:,np.newaxis,m] * sarg[np.newaxis,:]
+		self.r_central = np.concatenate((x[:,:,np.newaxis],y[:,:,np.newaxis],z[:,:,np.newaxis]),axis=2)
 
 	def get_r_central(self):
 		return self.r_central
 
+	def compute_x1y1z1(self):
+		xc, yc, zc, xs, ys, zs = self.unpack_fourier(self.fc)
+		x1 = np.zeros((self.NC,self.NS+1))
+		y1 = np.zeros((self.NC,self.NS+1))
+		z1 = np.zeros((self.NC,self.NS+1))
+		for m in range(self.NF):
+			arg = m * self.theta
+			carg = np.cos(arg)
+			sarg = np.sin(arg)
+			x1 += - m * xc[:,np.newaxis,m] * sarg[np.newaxis,:] + m * xs[:,np.newaxis,m] * carg[np.newaxis,:]
+			y1 += - m * yc[:,np.newaxis,m] * sarg[np.newaxis,:] + m * ys[:,np.newaxis,m] * carg[np.newaxis,:]
+			z1 += - m * zc[:,np.newaxis,m] * sarg[np.newaxis,:] + m * zs[:,np.newaxis,m] * carg[np.newaxis,:]
+		self.r1 = np.concatenate((x[:,:,np.newaxis],y[:,:,np.newaxis],z[:,:,np.newaxis]),axis=2)
+
+	def compute_x2y2z2(self):
+		xc, yc, zc, xs, ys, zs = self.unpack_fourier(self.fc)
+		x2 = np.zeros((self.NC,self.NS+1))
+		y2 = np.zeros((self.NC,self.NS+1))
+		z2 = np.zeros((self.NC,self.NS+1))
+		for m in range(self.NF):
+			m2 = m**2
+			arg = m * self.theta
+			carg = np.cos(arg)
+			sarg = np.sin(arg)
+			x2 += - m2 * xc[:,np.newaxis,m] * carg[np.newaxis,:] - m2 * xs[:,np.newaxis,m] * sarg[np.newaxis,:]
+			y2 += - m2 * yc[:,np.newaxis,m] * carg[np.newaxis,:] - m2 * ys[:,np.newaxis,m] * sarg[np.newaxis,:]
+			z2 += - m2 * zc[:,np.newaxis,m] * carg[np.newaxis,:] - m2 * zs[:,np.newaxis,m] * sarg[np.newaxis,:]
+		self.r1 = np.concatenate((x[:,:,np.newaxis],y[:,:,np.newaxis],z[:,:,np.newaxis]),axis=2)
+
+	def compute_x3y3z3(self):
+		xc, yc, zc, xs, ys, zs = self.unpack_fourier(self.fc)
+		x3 = np.zeros((self.NC,self.NS+1))
+		y3 = np.zeros((self.NC,self.NS+1))
+		z3 = np.zeros((self.NC,self.NS+1))
+		for m in range(self.NF):
+			m3 = m**3
+			arg = m * self.theta
+			carg = np.cos(arg)
+			sarg = np.sin(arg)
+			x3 += m3 * xc[:,np.newaxis,m] * sarg[np.newaxis,:] - m3 * xs[:,np.newaxis,m] * carg[np.newaxis,:]
+			y3 += m3 * yc[:,np.newaxis,m] * sarg[np.newaxis,:] - m3 * ys[:,np.newaxis,m] * carg[np.newaxis,:]
+			z3 += m3 * zc[:,np.newaxis,m] * sarg[np.newaxis,:] - m3 * zs[:,np.newaxis,m] * carg[np.newaxis,:]
+		self.r1 = np.concatenate((x[:,:,np.newaxis],y[:,:,np.newaxis],z[:,:,np.newaxis]),axis=2)
+
 	def compute_dsdt(self):
-		pass
+		self.dsdt = np.linalg.norm(self.r1,axis=2)
 
 	def get_dsdt(self):
 		return self.dsdt
 
-	def calc_length(self):
-		pass
+	def compute_length(self):
+		dt = 2. * PI / self.NS
+		integrand = dt * self.dsdt
+		self.length = np.trapz(integrand,axis=1)
 
 	def get_length(self):
 		return self.length
 
-	def compute_x1y1z1(self):
-		pass
+	def compute_total_length(self):
+		self.total_length = np.sum(self.length)
 
-	def compute_x2y2z2(self):
-		pass
-
-	def compute_x3y3z3(self):
-		pass
+	def get_total_length(self):
+		return self.total_length
 
 	def get_r1(self):
 		return self.r1
@@ -126,13 +192,20 @@ class CoilSet:
 		self.compute_binormal()
 
 	def compute_tangent(self):
-		pass
+		a0 = self.dsdt
+		self.tangent = self.r1 / a0[:,:,np.newaxis]
 
 	def compute_normal(self):
-		pass
+		x2 = self.r2[:,:,0]
+		y2 = self.r2[:,:,1]
+		z2 = self.r2[:,:,2]
+		a1 = x2 * self.tangent[:,:,0] + y2 * self.tangent[:,:,1] + z2 * self.tangent[:,:,2]  
+		N = np.concatenate((x2[:,:,np.newaxis],y2[:,:,np.newaxis],z2[:,:,np.newaxis]),axis=2) - self.tangent * a1[:,:,np.newaxis]
+		norm = np.linalg.norm(N,axis=2)
+		self.normal = N / norm[:,:,np.newaxis]
 
 	def compute_binormal(self):
-		pass
+		self.binormal = np.cross(self.tangent, self.normal)
 
 	def get_tangent(self):
 		return self.tangent
