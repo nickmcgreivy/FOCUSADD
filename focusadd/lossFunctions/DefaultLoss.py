@@ -1,3 +1,5 @@
+from lossFunctions.LossFunction import LossFunction
+import jax.numpy as np
 class DefaultLoss(LossFunction):
 
 	def __init__(self,surface,coil_set,weight_length=0.1):
@@ -15,7 +17,7 @@ class DefaultLoss(LossFunction):
 		"""
 
 		# NEED TO SET_PARAMS 
-		self.coil_set.set_params() 
+		self.coil_set.set_params(params) 
 
 		B_loss_val = np.sum(self.bnsquared())
 

@@ -223,7 +223,7 @@ class CoilSet:
 		r += self.r_central[:,:,np.newaxis,np.newaxis,:]
 		for n in range(self.NNR):
 			for b in range(self.NBR):
-				r = index_add(r,index[:,:,n,b,:], (n - .5*(self.NNR-1)) * self.ln * self.v1 + (b - .5*(self.NBR-1)) * self.lb * self.v2gi)
+				r = index_add(r,index[:,:,n,b,:], (n - .5*(self.NNR-1)) * self.ln * self.v1 + (b - .5*(self.NBR-1)) * self.lb * self.v2)
 		self.r = r
 
 	def compute_frame(self):

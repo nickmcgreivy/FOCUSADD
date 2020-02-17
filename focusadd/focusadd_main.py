@@ -23,7 +23,7 @@ def setArgs():
 	parser.add_argument("-rc","--radiusCoil", help="Radius of coils", default=2.0)
 	parser.add_argument("-rs","--radiusSurface", help="Radius of surface", default=1.0)
 	parser.add_argument("-nr","--numRotate", help="Number of rotations of each finite-build coil", default=0)
-	parser.add_argument("-lr","--learningRate", help="Learning Rate of SGD, ODEFlow, Newtons Method", default=0.05)
+	parser.add_argument("-lr","--learningRate", help="Learning Rate of SGD, ODEFlow, Newtons Method", default=0.0001)
 	return parser.parse_args()
 
 
@@ -56,7 +56,7 @@ def main():
 	# IMPORT LOSS FUNCTION -> NEED LOSSFUNCTIONS TO HAVE SOME STANDARD API
 	l = DefaultLoss(surface, coilSet)
 	# IMPORT OPTIMIZER -> NEED OPTIMIZERS TO HAVE SOME STANDARD API
-	optim = GD(l, learningRate=args.learningRate)
+	optim = GD(l, learning_rate=args.learningRate)
 
 	# PERFORM OPTIMIZATION
 	for i in range(args.numIter):

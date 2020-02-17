@@ -1,9 +1,9 @@
 import jax.numpy as np
-from Optimizer import Optimizer
+from optimizers.Optimizer import Optimizer
 
 class GD(Optimizer):
 
-	def __init__(self,loss_function,learning_rate=0.05):
+	def __init__(self,loss_function,learning_rate=0.000):
 		super().__init__(loss_function)
 		self.learning_rate = learning_rate
 
@@ -19,6 +19,9 @@ class GD(Optimizer):
 
 		loss_val, grad = self.value_and_grad(params)
 
-		new_params = np.subtract(params,np.multiply(self.learning_rate * grad))
+		delta = tuple(self.learning_rate * g for g in grad)
+		fc, fr = params
+		dc, dr = delta
+		new_params = (fc - dc, fr - dr)
 		return loss_val, new_params
 

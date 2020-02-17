@@ -1,3 +1,5 @@
+import jax.numpy as np
+
 class LossFunction:
 
 	def __init__(self,surface,coil_set):
@@ -21,14 +23,17 @@ class LossFunction:
 		r = (r[1:,1:,:] + r[1:,:-1,:] + r[:-1,1:,:] + r[:-1,:-1,:]) / 4. # NZ x NT x 3
 		mu_0I = self.coil_set.get_I() * mu_0 / (self.coil_set.NNR * self.coil_set.NBR) # NC
 		r_prime = self.coil_set.get_r() # NC x NT+1 x NNR x NBR x 3
+		dl = (r_prime[:,1:,:,:,:] - r_prime[:,:-1,:,:,:]) / 2. # NC x NT x NNR x NBR x 3
 		r_prime = (r_prime[:,1:,:,:,:] + r_prime[:,:-1,:,:,:]) / 2. # NC x NT x NNR x NBR x 3
-		mu_0Idl = mu_0I[:,np.newaxis,np.newaxis,np.newaxis,np.newaxis] * (r_prime[:,1:,:,:,:] - r_prime[:,:-1,:,:,:]) / 2. # NC x NT x NNR x NBR x 3
+		mu_0Idl = mu_0I[:,np.newaxis,np.newaxis,np.newaxis,np.newaxis] * dl # NC x NT x NNR x NBR x 3
 		r_minus_rprime = r[np.newaxis,:,:,np.newaxis,np.newaxis,:] - r_prime[:,np.newaxis,:,:,:,:] # NC x NZ x NT x NNR x NBR x 3
-		top = np.cross(mu_0Idl[:,np.newaxis,:,:,:,:],r_minus_rprime)
-		bottom = np.linalg.norm(r_minus_rprime,axis=-1)**3
+		top = np.cross(mu_0Idl[:,np.newaxis,:,:,:,:],r_minus_rprime) # NC x NZ x NT x NNR x NBR x 3
+		bottom = np.linalg.norm(r_minus_rprime,axis=-1)**3 # NC x NZ x NT x NNR x NBR
 
-		toSum = top / bottom[:,:,:,:,:,np.newaxis]
-		B = np.sum(toSum,axis=(0,3,4))
-		normal = self.surface.
+		B = np.sum(top / bottom[:,:,:,:,:,np.newaxis], axis=(0,3,4)) # NZ x NT x 3
+		nn = self.surface.get_nn() 
+		nn = (nn[1:,1:,:] + nn[1:,:-1,:] + nn[:-1,1:,:] + nn[:-1,:-1,:]) / 4.
+		return np.sum(nn * B, axis=-1)**2
+
 
 

@@ -7,7 +7,7 @@ class Newton(Optimizer):
 	def __init__(self,loss_function,damping_rate=0.5):
 		super().__init__(loss_function)
 		self.damping_rate = damping_rate
-		self.hessian = hessian(self.loss_function)
+		self.hessian = hessian(self.loss_function.loss)
 
 	def step(self,params):
 		"""
