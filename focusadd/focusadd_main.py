@@ -51,7 +51,7 @@ def main():
 
 	filename = 'coils/saved/defaultCoils.hdf5'
 	output_file = 'coils/saved/resultCoils.hdf5'
-	coilSet = CoilSet(surface,input_file=filename)
+	coilSet = CoilSet(surface,args_dict = args_dict)#input_file=filename)
 	params = coilSet.get_params()
 	# IMPORT LOSS FUNCTION -> NEED LOSSFUNCTIONS TO HAVE SOME STANDARD API
 	l = DefaultLoss(surface, coilSet)

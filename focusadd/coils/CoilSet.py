@@ -168,11 +168,9 @@ class CoilSet:
 		dt = 2. * PI / self.NS
 		integrand = dt * self.dsdt[:,0:-1]
 		self.length = np.sum(integrand,axis=1)
-		print(self.length)
 		dl = self.r_central[:,1:] - self.r_central[:,:-1]
 		dr = np.linalg.norm(dl,axis=-1)
 		length2 = np.sum(dr,axis=-1)
-		print(length2)
 
 
 	def get_length(self):
@@ -240,7 +238,7 @@ class CoilSet:
 		rc = self.fr[0]
 		rs = self.fr[1]
 		for m in range(self.NFR):
-			arg = self.theta * m
+			arg = self.theta * m / 2
 			carg = np.cos(arg)
 			sarg = np.sin(arg)
 			alpha += rc[:,np.newaxis,m] * carg[np.newaxis,:] + rs[:,np.newaxis,m] * sarg[np.newaxis,:]
