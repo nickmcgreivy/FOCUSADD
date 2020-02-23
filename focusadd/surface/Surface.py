@@ -27,9 +27,7 @@ class Surface:
 		d_zeta = 2. * PI / self.NZ
 		torsionInt = (np.cumsum(torsion) - torsion) * d_zeta
 		zeta = self.axis.get_zeta()
-		alpha = 0.5 * self.NR * zeta + self.zeta_off
-		alpha -= torsionInt
-		self.alpha = alpha
+		self.alpha = 0.5 * self.NR * zeta + self.zeta_off - torsionInt
 
 	def get_alpha(self):
 		return self.alpha
@@ -75,7 +73,6 @@ class Surface:
 		r += sa * self.v2[0:self.NZ:spacing,np.newaxis,:] * stheta[np.newaxis,:,np.newaxis] / np.sqrt(ep)
 		return r
 		
-
 	def calc_drdt(self):
 		drdt = np.zeros((self.NZ+1,self.NT+1,3))
 		s=1.
@@ -88,7 +85,6 @@ class Surface:
 		drdt -= sa * np.sqrt(ep) * self.v1[:,np.newaxis,:] * stheta[np.newaxis,:,np.newaxis]
 		drdt += sa * self.v2[:,np.newaxis,:] * ctheta[np.newaxis,:,np.newaxis] / np.sqrt(ep)
 		self.drdt = drdt
-
 
 	def get_drdt(self):
 		return self.drdt
