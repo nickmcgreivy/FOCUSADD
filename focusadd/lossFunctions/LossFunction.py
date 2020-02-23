@@ -19,8 +19,7 @@ class LossFunction:
 
 		"""
 		mu_0 = 1.
-		r = self.surface.get_r() # NZ+1 x NT+1 x 3
-		r = (r[1:,1:,:] + r[1:,:-1,:] + r[:-1,1:,:] + r[:-1,:-1,:]) / 4. # NZ x NT x 3
+		r = self.surface.get_r_central() # NZ x NT x 3
 		mu_0I = self.coil_set.get_I() * mu_0 / (self.coil_set.NNR * self.coil_set.NBR) # NC
 		r_prime = self.coil_set.get_r() # NC x NT+1 x NNR x NBR x 3
 		dl = (r_prime[:,1:,:,:,:] - r_prime[:,:-1,:,:,:]) / 2. # NC x NT x NNR x NBR x 3
@@ -31,9 +30,8 @@ class LossFunction:
 		bottom = np.linalg.norm(r_minus_rprime,axis=-1)**3 # NC x NZ x NT x NNR x NBR
 
 		B = np.sum(top / bottom[:,:,:,:,:,np.newaxis], axis=(0,3,4)) # NZ x NT x 3
-		nn = self.surface.get_nn() 
-		nn = (nn[1:,1:,:] + nn[1:,:-1,:] + nn[:-1,1:,:] + nn[:-1,:-1,:]) / 4.
-		return np.sum(nn * B, axis=-1)**2
+		nn = self.surface.get_nn_central() # NZ x NT x 3
+		return np.sum((nn * B)**2, axis=-1)
 
 
 
