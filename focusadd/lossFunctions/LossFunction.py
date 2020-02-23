@@ -21,9 +21,8 @@ class LossFunction:
 		mu_0 = 1.
 		r = self.surface.get_r_central() # NZ x NT x 3
 		mu_0I = self.coil_set.get_I() * mu_0 / (self.coil_set.NNR * self.coil_set.NBR) # NC
-		r_prime = self.coil_set.get_r() # NC x NT+1 x NNR x NBR x 3
-		dl = (r_prime[:,1:,:,:,:] - r_prime[:,:-1,:,:,:]) / 2. # NC x NT x NNR x NBR x 3
-		r_prime = (r_prime[:,1:,:,:,:] + r_prime[:,:-1,:,:,:]) / 2. # NC x NT x NNR x NBR x 3
+		dl = self.coil_set.get_dl() # NC x NT x NNR x NBR x 3
+		r_prime = self.coil_set.get_r_middle()  # NC x NT x NNR x NBR x 3
 		mu_0Idl = mu_0I[:,np.newaxis,np.newaxis,np.newaxis,np.newaxis] * dl # NC x NT x NNR x NBR x 3
 		r_minus_rprime = r[np.newaxis,:,:,np.newaxis,np.newaxis,:] - r_prime[:,np.newaxis,:,:,:,:] # NC x NZ x NT x NNR x NBR x 3
 		top = np.cross(mu_0Idl[:,np.newaxis,:,:,:,:],r_minus_rprime) # NC x NZ x NT x NNR x NBR x 3

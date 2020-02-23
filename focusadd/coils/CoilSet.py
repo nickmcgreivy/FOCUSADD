@@ -106,7 +106,7 @@ class CoilSet:
 			arg = m * self.theta
 			carg = np.cos(arg)
 			sarg = np.sin(arg)
-			x +=  xc[:,np.newaxis,m] * carg[np.newaxis,:] + xs[:,np.newaxis,m] * sarg[np.newaxis,:]
+			x += xc[:,np.newaxis,m] * carg[np.newaxis,:] + xs[:,np.newaxis,m] * sarg[np.newaxis,:]
 			y += yc[:,np.newaxis,m] * carg[np.newaxis,:] + ys[:,np.newaxis,m] * sarg[np.newaxis,:]
 			z += zc[:,np.newaxis,m] * carg[np.newaxis,:] + zs[:,np.newaxis,m] * sarg[np.newaxis,:]
 		self.r_central = np.concatenate((x[:,:,np.newaxis],y[:,:,np.newaxis],z[:,:,np.newaxis]),axis=2)
@@ -168,6 +168,12 @@ class CoilSet:
 		dt = 2. * PI / self.NS
 		integrand = dt * self.dsdt[:,0:-1]
 		self.length = np.sum(integrand,axis=1)
+		print(self.length)
+		dl = self.r_central[:,1:] - self.r_central[:,:-1]
+		dr = np.linalg.norm(dl,axis=-1)
+		length2 = np.sum(dr,axis=-1)
+		print(length2)
+
 
 	def get_length(self):
 		return self.length
@@ -201,7 +207,7 @@ class CoilSet:
 		y2 = self.r2[:,:,1]
 		z2 = self.r2[:,:,2]
 		a1 = x2 * self.tangent[:,:,0] + y2 * self.tangent[:,:,1] + z2 * self.tangent[:,:,2]  
-		N = np.concatenate((x2[:,:,np.newaxis],y2[:,:,np.newaxis],z2[:,:,np.newaxis]),axis=2) - self.tangent * a1[:,:,np.newaxis]
+		N = self.r2 - self.tangent * a1[:,:,np.newaxis]
 		norm = np.linalg.norm(N,axis=2)
 		self.normal = N / norm[:,:,np.newaxis]
 
@@ -225,6 +231,8 @@ class CoilSet:
 			for b in range(self.NBR):
 				r = index_add(r,index[:,:,n,b,:], (n - .5*(self.NNR-1)) * self.ln * self.v1 + (b - .5*(self.NBR-1)) * self.lb * self.v2)
 		self.r = r
+		self.dl = (self.r[:,1:,:,:,:] - self.r[:,:-1,:,:,:]) / 2.
+		self.r_middle = (self.r[:,1:,:,:,:] + self.r[:,:-1,:,:,:]) / 2.
 
 	def compute_frame(self):
 		alpha = np.zeros((self.NC, self.NS+1))
@@ -246,6 +254,10 @@ class CoilSet:
 
 	def get_r(self):
 		return self.r
+	def get_dl(self):
+		return self.dl
+	def get_r_middle(self):
+		return self.r_middle
 
 	def get_I(self):
 		return self.I
