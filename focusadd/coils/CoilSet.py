@@ -229,7 +229,7 @@ class CoilSet:
 			for b in range(self.NBR):
 				r = index_add(r,index[:,:,n,b,:], (n - .5*(self.NNR-1)) * self.ln * self.v1 + (b - .5*(self.NBR-1)) * self.lb * self.v2)
 		self.r = r
-		self.dl = (self.r[:,1:,:,:,:] - self.r[:,:-1,:,:,:]) / 2.
+		self.dl = (self.r[:,1:,:,:,:] - self.r[:,:-1,:,:,:])
 		self.r_middle = (self.r[:,1:,:,:,:] + self.r[:,:-1,:,:,:]) / 2.
 
 	def compute_frame(self):

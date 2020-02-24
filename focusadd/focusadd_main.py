@@ -4,19 +4,22 @@ from surface.Surface import Surface
 from surface.Axis import Axis
 from coils.CoilSet import CoilSet
 import jax.numpy as np
+import numpy as numpy
 from lossFunctions.DefaultLoss import DefaultLoss
 from optimizers.GD import GD
+import math
 
+PI = math.pi
 def setArgs():
 	parser = argparse.ArgumentParser()
-	parser.add_argument("-n","--numIter", help="Number of iterations by the optimizer", default=10)
+	parser.add_argument("-n","--numIter", help="Number of iterations by the optimizer", default=1000)
 	parser.add_argument("-nt","--numTheta", help="Number of gridpoints in theta (poloidal angle) on the magnetic surface", default=32)
 	parser.add_argument("-nz","--numZeta", help="Number of gridpoints in zeta (toroidal angle) on the magnetic surface", default=64)
-	parser.add_argument("-nc","--numCoils", help="Number of coils", default=8)
+	parser.add_argument("-nc","--numCoils", help="Number of coils", default=16)
 	parser.add_argument("-ns","--numSegments", help="Number of segments in each coil", default=32)
 	parser.add_argument("-nfc","--numFourierCoils", help="Number of Fourier Components describing each coil", default=4)
-	parser.add_argument("-nnr","--numNormalRotate", help="Number of filaments in the (rotated) normal direction for each multi-build coil", default=2)
-	parser.add_argument("-nbr","--numBinormalRotate", help="Number of filaments in the (rotated) binormal direction for each multi-build coil", default=2)
+	parser.add_argument("-nnr","--numNormalRotate", help="Number of filaments in the (rotated) normal direction for each multi-build coil", default=1)
+	parser.add_argument("-nbr","--numBinormalRotate", help="Number of filaments in the (rotated) binormal direction for each multi-build coil", default=1)
 	parser.add_argument("-nfr","--numFourierRotate", help="Number of Fourier Components describing the rotation relative to the torsion vector of each coil", default=4)
 	parser.add_argument("-ln","--lengthNormal", help="Length between each coil in the (rotated) normal direction", default=0.01)
 	parser.add_argument("-lb","--lengthBinormal", help="Length between each coil in the (rotated) binormal direction", default=0.01)
