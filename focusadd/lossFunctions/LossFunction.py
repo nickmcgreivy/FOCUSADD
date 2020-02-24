@@ -29,8 +29,8 @@ class LossFunction:
 		bottom = np.linalg.norm(r_minus_rprime,axis=-1)**3 # NC x NZ x NT x NS x NNR x NBR
 
 		B = np.sum(top / bottom[:,:,:,:,:,:,np.newaxis], axis=(0,3,4,5)) # NZ x NT x 3
-		nn = self.surface.get_nn_central() # NZ x NT x 3
-		return np.sum((nn * B)**2, axis=-1)
+		nn = self.surface.get_nn() # NZ x NT x 3
+		return np.sum((nn * B)**2, axis=-1) * self.surface.get_sg()[:,:] #NZ x NT
 
 
 

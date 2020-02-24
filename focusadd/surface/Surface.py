@@ -131,15 +131,12 @@ class Surface:
 		self.calc_drdt()
 		self.calc_drdz()
 		nn = np.cross(self.drdt, self.drdz)
+		nn = (nn[1:,1:,:] + nn[1:,:-1,:] + nn[:-1,1:,:] + nn[:-1,:-1,:]) / 4.
 		self.sg = np.linalg.norm(nn,axis=2)
 		self.nn = nn / self.sg[:,:,np.newaxis]
-		self.nn_central = (self.nn[1:,1:,:] + self.nn[1:,:-1,:] + self.nn[:-1,1:,:] + self.nn[:-1,:-1,:]) / 4.
 
 	def get_nn(self):
 		return self.nn
-
-	def get_nn_central(self):
-		return self.nn_central
 
 	def get_sg(self):
 		return self.sg
