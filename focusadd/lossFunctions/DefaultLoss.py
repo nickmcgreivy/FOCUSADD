@@ -21,13 +21,8 @@ class DefaultLoss(LossFunction):
 
 		# NEED TO SET_PARAMS 
 		self.coil_set.set_params(params) 
-		res = self.bnsquared()
-		print(res.shape)
-		B_loss_val = np.sum(res)
+		B_loss_val = np.sum(self.bnsquared())
 
 		len_loss_val = self.coil_set.get_total_length()
-		print(self.weight_length * len_loss_val)
-		print(B_loss_val)
-
 		return B_loss_val + self.weight_length * len_loss_val
 

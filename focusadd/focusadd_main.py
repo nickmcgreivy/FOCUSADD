@@ -12,15 +12,15 @@ import math
 PI = math.pi
 def setArgs():
 	parser = argparse.ArgumentParser()
-	parser.add_argument("-n","--numIter", help="Number of iterations by the optimizer", default=1000)
+	parser.add_argument("-n","--numIter", help="Number of iterations by the optimizer", default=1500)
 	parser.add_argument("-nt","--numTheta", help="Number of gridpoints in theta (poloidal angle) on the magnetic surface", default=32)
 	parser.add_argument("-nz","--numZeta", help="Number of gridpoints in zeta (toroidal angle) on the magnetic surface", default=64)
-	parser.add_argument("-nc","--numCoils", help="Number of coils", default=16)
+	parser.add_argument("-nc","--numCoils", help="Number of coils", default=8)
 	parser.add_argument("-ns","--numSegments", help="Number of segments in each coil", default=32)
 	parser.add_argument("-nfc","--numFourierCoils", help="Number of Fourier Components describing each coil", default=4)
 	parser.add_argument("-nnr","--numNormalRotate", help="Number of filaments in the (rotated) normal direction for each multi-build coil", default=1)
 	parser.add_argument("-nbr","--numBinormalRotate", help="Number of filaments in the (rotated) binormal direction for each multi-build coil", default=1)
-	parser.add_argument("-nfr","--numFourierRotate", help="Number of Fourier Components describing the rotation relative to the torsion vector of each coil", default=4)
+	parser.add_argument("-nfr","--numFourierRotate", help="Number of Fourier Components describing the rotation relative to the torsion vector of each coil", default=2)
 	parser.add_argument("-ln","--lengthNormal", help="Length between each coil in the (rotated) normal direction", default=0.01)
 	parser.add_argument("-lb","--lengthBinormal", help="Length between each coil in the (rotated) binormal direction", default=0.01)
 	parser.add_argument("-rc","--radiusCoil", help="Radius of coils", default=2.0)
@@ -66,7 +66,7 @@ def main():
 		loss_val, params = optim.step(params) # loss_val is for old params, params is new params
 		print(loss_val)
 	coilSet.set_params(params)
-	#coilSet.write(output_file)
+	coilSet.write(output_file)
 
 
 

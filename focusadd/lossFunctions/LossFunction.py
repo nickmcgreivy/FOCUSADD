@@ -32,7 +32,7 @@ class LossFunction:
 		B = np.sum(top / bottom[:,:,:,:,:,:,np.newaxis], axis=(0,3,4,5)) # NZ x NT x 3
 		nn = self.surface.get_nn() # NZ x NT x 3
 		C = .5 * 4 * PI**2 / (self.surface.NT * self.surface.NZ)
-		return np.sum((nn * B)**2, axis=-1) * self.surface.get_sg() * C #NZ x NT 
+		return np.sum(nn * B, axis=-1)**2 * self.surface.get_sg() * C #NZ x NT 
 
 
 
