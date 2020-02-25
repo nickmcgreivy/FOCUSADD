@@ -20,10 +20,10 @@ def setArgs():
 	parser.add_argument("-nz","--numZeta", help="Number of gridpoints in zeta (toroidal angle) on the magnetic surface", default=64)
 	parser.add_argument("-nc","--numCoils", help="Number of coils", default=8)
 	parser.add_argument("-ns","--numSegments", help="Number of segments in each coil", default=64)
-	parser.add_argument("-nfc","--numFourierCoils", help="Number of Fourier Components describing each coil", default=4)
+	parser.add_argument("-nfc","--numFourierCoils", help="Number of Fourier Components describing each coil", default=8)
 	parser.add_argument("-nnr","--numNormalRotate", help="Number of filaments in the (rotated) normal direction for each multi-build coil", default=2)
 	parser.add_argument("-nbr","--numBinormalRotate", help="Number of filaments in the (rotated) binormal direction for each multi-build coil", default=2)
-	parser.add_argument("-nfr","--numFourierRotate", help="Number of Fourier Components describing the rotation relative to the torsion vector of each coil", default=2)
+	parser.add_argument("-nfr","--numFourierRotate", help="Number of Fourier Components describing the rotation relative to the torsion vector of each coil", default=4)
 	parser.add_argument("-ln","--lengthNormal", help="Length between each coil in the (rotated) normal direction", default=0.01)
 	parser.add_argument("-lb","--lengthBinormal", help="Length between each coil in the (rotated) binormal direction", default=0.01)
 	parser.add_argument("-rc","--radiusCoil", help="Radius of coils", default=2.0)
@@ -38,7 +38,7 @@ def main():
 	args = setArgs()
 
 	# Read and return the axis
-	axis, epsilon, minor_rad, N_rotate, zeta_off = readAxis("./initFiles/axes/defaultAxis.txt",int(args.numZeta))
+	axis, epsilon, minor_rad, N_rotate, zeta_off = readAxis("./initFiles/axes/ellipticalAxis3Rotate.txt",int(args.numZeta))
 
 	# Create the surface
 	surface = Surface(axis, int(args.numZeta), int(args.numTheta), epsilon, minor_rad, N_rotate, zeta_off,float(args.radiusSurface))
@@ -56,17 +56,17 @@ def main():
 	args_dict['numRotate'] = int(args.numRotate)
 
 	filename = 'coils/saved/defaultCoils.hdf5'
-	output_file = 'coils/saved/resultCoils.hdf5'
+	output_file = 'coils/saved/16coilsElliptical3Rotate.hdf5'
 	coilSet = CoilSet(surface,args_dict = args_dict)#input_file=filename)
 	params = coilSet.get_params()
 	# IMPORT LOSS FUNCTION -> NEED LOSSFUNCTIONS TO HAVE SOME STANDARD API
 	l = DefaultLoss(surface, coilSet)
 	# IMPORT OPTIMIZER -> NEED OPTIMIZERS TO HAVE SOME STANDARD API
 	#optim = ODEFlow(l, learning_rate=args.learningRate)
-	optim = GD(l, learning_rate=args.learningRate)
+	optim = GD(l, learning_rate=float(args.learningRate))
 
 	# PERFORM OPTIMIZATION
-	for i in range(args.numIter):
+	for i in range(int(args.numIter)):
 		loss_val, params = optim.step(params) # loss_val is for old params, params is new params
 		print(loss_val)
 	coilSet.set_params(params)
@@ -76,9 +76,6 @@ def main():
 	g = shapegrad.coil_gradient()
 	print(g.shape)
 	print(g)
-	print(g.shape)
-
-
 
 
 
