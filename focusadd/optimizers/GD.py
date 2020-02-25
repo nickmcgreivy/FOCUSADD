@@ -1,4 +1,5 @@
 import jax.numpy as np
+from jax import jit
 from optimizers.Optimizer import Optimizer
 
 class GD(Optimizer):
@@ -6,7 +7,7 @@ class GD(Optimizer):
 	def __init__(self,loss_function,learning_rate=0.000):
 		super().__init__(loss_function)
 		self.learning_rate = learning_rate
-
+		
 	def step(self,params):
 		"""
 		Takes an initial set of parameters and updates the parameters according to gradient descent.
