@@ -29,7 +29,11 @@ def setArgs():
 	parser.add_argument("-rc","--radiusCoil", help="Radius of coils", default=2.0)
 	parser.add_argument("-rs","--radiusSurface", help="Radius of surface", default=1.0)
 	parser.add_argument("-nr","--numRotate", help="Number of rotations of each finite-build coil", default=0)
-	parser.add_argument("-lr","--learningRate", help="Learning Rate of SGD, ODEFlow, Newtons Method", default=0.0001)
+	parser.add_argument("-lr","--learningRate", help="Learning Rate of SGD, ODEFlow, Newtons Method", default=0.001)
+	parser.add_argument("-o" ,"--outputFile", help="Name of output file for coils", default="coilResult")
+	parser.add_argument("-i" ,"--inputFile", help="Name of input file for coils", default=None)
+	parser.add_argument("-w" ,"--weightLength", help="Length of weight paid to coils", default=0.1)
+	parser.add_argument("-a","--axis",help="Name of axis file", default="defaultAxis")
 	return parser.parse_args()
 
 
@@ -38,7 +42,7 @@ def main():
 	args = setArgs()
 
 	# Read and return the axis
-	axis, epsilon, minor_rad, N_rotate, zeta_off = readAxis("./initFiles/axes/ellipticalAxis3Rotate.txt",int(args.numZeta))
+	axis, epsilon, minor_rad, N_rotate, zeta_off = readAxis("./initFiles/axes/{}.txt".format(args.axis),int(args.numZeta))
 
 	# Create the surface
 	surface = Surface(axis, int(args.numZeta), int(args.numTheta), epsilon, minor_rad, N_rotate, zeta_off,float(args.radiusSurface))
@@ -55,12 +59,15 @@ def main():
 	args_dict['radiusCoil'] = float(args.radiusCoil)
 	args_dict['numRotate'] = int(args.numRotate)
 
-	filename = 'coils/saved/defaultCoils.hdf5'
-	output_file = 'coils/saved/16coilsElliptical3Rotate.hdf5'
-	coilSet = CoilSet(surface,args_dict = args_dict)#input_file=filename)
+	input_file = args.inputFile
+	output_file = 'coils/saved/{}.hdf5'.format(args.outputFile)
+	if input_file is not None:
+		coilSet = CoilSet(surface,input_file='coils/saved/{}.hdf5'.format(input_file))
+	else:
+		coilSet = CoilSet(surface,args_dict = args_dict)
 	params = coilSet.get_params()
 	# IMPORT LOSS FUNCTION -> NEED LOSSFUNCTIONS TO HAVE SOME STANDARD API
-	l = DefaultLoss(surface, coilSet)
+	l = DefaultLoss(surface, coilSet,weight_length=float(args.weightLength))
 	# IMPORT OPTIMIZER -> NEED OPTIMIZERS TO HAVE SOME STANDARD API
 	#optim = ODEFlow(l, learning_rate=args.learningRate)
 	optim = GD(l, learning_rate=float(args.learningRate))
@@ -74,8 +81,6 @@ def main():
 
 	shapegrad = ShapeGradient(surface, coilSet)
 	g = shapegrad.coil_gradient()
-	print(g.shape)
-	print(g)
 
 
 
