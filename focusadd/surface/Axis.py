@@ -180,7 +180,6 @@ class Axis:
 	def compute_dsdz(self):
 		x1, y1, z1 = self.x1, self.y1, self.z1
 		self.dsdz = np.linalg.norm(np.concatenate((self.x1[:,np.newaxis],self.y1[:,np.newaxis],self.z1[:,np.newaxis]),axis=1),axis=1)
-		#self.dsdz = np.sqrt(x1**2 + y1**2 + z1**2) # magnitude of first derivative of curve
 
 	def get_dsdz(self):
 		return self.dsdz

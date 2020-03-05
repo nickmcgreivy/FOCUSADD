@@ -79,6 +79,8 @@ class CoilSet:
 		self.compute_x1y1z1()
 		self.compute_x2y2z2()
 		self.compute_x3y3z3()
+		self.compute_torsion()
+		self.compute_mean_torsion()
 		self.compute_dsdt()
 		self.compute_length()
 		self.compute_total_length()
@@ -233,6 +235,12 @@ class CoilSet:
 	def compute_frame(self):
 		alpha = np.zeros((self.NC, self.NS+1))
 		alpha += self.theta * self.NR / 2
+		torsion = self.axis.get_torsion()
+		mean_torsion = self.axis.get_mean_torsion()
+		d_theta = 2. * PI / self.NS
+		torsion = torsion - mean_torsion
+		torsionInt = (np.cumsum(torsion,axis=-1) - torsion) * d_theta
+		alpha += torsionInt
 		rc = self.fr[0]
 		rs = self.fr[1]
 		for m in range(self.NFR):
@@ -258,13 +266,25 @@ class CoilSet:
 	def get_I(self):
 		return self.I
 
-	"""
+	
 	def compute_torsion(self):
-		pass
+		r1 = self.get_r1() # NC x NS+1 x 3
+		r2 = self.get_r2() # NC x NS+1 x 3
+		r3 = self.get_r3() # NC x NS+1 x 3
+		cross12 = np.cross(r1, r2)
+		top = cross12[:,:,0] * r3[:,:,0] + cross12[:,:,1] * r3[:,:,1] + cross12[:,:,2] * r3[:,:,2]
+		bottom = np.linalg.norm(cross12,axis=-1)**2
+		self.torsion = top / bottom # NC x NS+1
 
-	def compute_integrated_torsion(self):
-		pass
+	def get_torsion(self):
+		return self.torsion
 
+	def compute_mean_torsion(self):
+		self.mean_torsion = np.mean(self.torsion[:,:-1])
+
+	def get_mean_torsion(self):
+		return self.mean_torsion
+	"""
 	def compute_curvature(self):
 		pass
 

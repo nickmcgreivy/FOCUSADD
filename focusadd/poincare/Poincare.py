@@ -78,8 +78,8 @@ class Poincare():
 		z_3 = z_i + dtheta/2. * Fz_2
 
 		Fr_3, Fz_3 = self.odeStep(r_3, theta_i + dtheta/2., z_3)
-		r_4 = r_i + dtheta/2. * Fr_3
-		z_4 = z_i + dtheta/2. * Fz_3
+		r_4 = r_i + dtheta * Fr_3
+		z_4 = z_i + dtheta * Fz_3
 
 		Fr_4, Fz_4 = self.odeStep(r_4, theta_i + dtheta, z_4)
 
