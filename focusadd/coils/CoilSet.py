@@ -235,12 +235,12 @@ class CoilSet:
 	def compute_frame(self):
 		alpha = np.zeros((self.NC, self.NS+1))
 		alpha += self.theta * self.NR / 2
-		torsion = self.axis.get_torsion()
-		mean_torsion = self.axis.get_mean_torsion()
+		torsion = self.get_torsion()
+		mean_torsion = self.get_mean_torsion()
 		d_theta = 2. * PI / self.NS
 		torsion = torsion - mean_torsion
 		torsionInt = (np.cumsum(torsion,axis=-1) - torsion) * d_theta
-		alpha += torsionInt
+		#alpha -= torsionInt
 		rc = self.fr[0]
 		rs = self.fr[1]
 		for m in range(self.NFR):
