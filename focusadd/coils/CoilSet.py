@@ -14,8 +14,6 @@ class CoilSet:
 				self.NC, self.NS, self.NF, self.NFR, self.ln, self.lb, self.NNR, self.NBR, self.rc, self.NR = f.root.metadata[0]
 				self.fc = np.asarray(f.root.coilSeries[:,:,:])
 				self.fr = np.asarray(f.root.rotationSeries[:,:,:])
-			# READ IN HDF5 FORMAT 
-			# DON'T IMPLEMENT YET
 		elif args_dict is not None:
 			# INITIALIZE COILS TO DEFAULT VALUES
 			self.NC = args_dict['numCoils']
@@ -55,9 +53,9 @@ class CoilSet:
 			xc = index_add(xc,index[:,m], 2.0 * np.sum(x * np.cos(m * theta), axis=1) / self.NS )
 			yc = index_add(yc,index[:,m], 2.0 * np.sum(y * np.cos(m * theta), axis=1) / self.NS )
 			zc = index_add(zc,index[:,m], 2.0 * np.sum(z * np.cos(m * theta), axis=1) / self.NS )
-			xs = index_add(xs,index[:,m],-2.0 * np.sum(x * np.sin(m * theta), axis=1) / self.NS )
-			ys = index_add(ys,index[:,m],-2.0 * np.sum(y * np.sin(m * theta), axis=1) / self.NS )
-			zs = index_add(zs,index[:,m],-2.0 * np.sum(z * np.sin(m * theta), axis=1) / self.NS )
+			xs = index_add(xs,index[:,m], 2.0 * np.sum(x * np.sin(m * theta), axis=1) / self.NS ) # - 
+			ys = index_add(ys,index[:,m], 2.0 * np.sum(y * np.sin(m * theta), axis=1) / self.NS ) # - 
+			zs = index_add(zs,index[:,m], 2.0 * np.sum(z * np.sin(m * theta), axis=1) / self.NS ) # - 
 		return np.asarray([xc,yc,zc,xs,ys,zs]) # 6 x NC x NF
 
 	def write(self, output_file):
@@ -159,7 +157,7 @@ class CoilSet:
 		self.r3 = np.concatenate((x3[:,:,np.newaxis],y3[:,:,np.newaxis],z3[:,:,np.newaxis]),axis=2)
 
 	def compute_dsdt(self):
-		self.dsdt = np.linalg.norm(self.r1,axis=2)
+		self.dsdt = np.linalg.norm(self.r1,axis=-1)
 
 	def get_dsdt(self):
 		return self.dsdt

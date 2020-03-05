@@ -25,6 +25,7 @@ class Axis:
 		self.compute_dsdz()
 		self.compute_frenet()
 		self.compute_torsion()
+		self.compute_mean_torsion()
 		self.compute_curvature()
 		self.compute_dBdz()
 		self.compute_dNdz()
@@ -49,6 +50,17 @@ class Axis:
 
 	def get_r(self):
 		return np.concatenate((self.x[:,np.newaxis],self.y[:,np.newaxis],self.z[:,np.newaxis]),axis=1)
+
+	def get_r_from_zeta(self,zeta):
+		x = 0.
+		y = 0.
+		z = 0.
+		for m in range(self.NF):
+			arg = m * zeta
+			x += self.xc[m] * np.cos(arg) + self.xs[m] * np.sin(arg)
+			y += self.yc[m] * np.cos(arg) + self.ys[m] * np.sin(arg)
+			z += self.zc[m] * np.cos(arg) + self.zs[m] * np.sin(arg)
+		return x,y,z
 
 	def compute_frenet(self):
 		""" 
@@ -148,6 +160,12 @@ class Axis:
 	def get_torsion(self):
 		return self.torsion
 
+	def compute_mean_torsion(self):
+		self.mean_torsion = np.mean(self.torsion[:-1])
+
+	def get_mean_torsion(self):
+		return self.mean_torsion
+
 	def compute_curvature(self):
 		r1 = self.get_r1()
 		r2 = self.get_r2()
@@ -161,7 +179,8 @@ class Axis:
 
 	def compute_dsdz(self):
 		x1, y1, z1 = self.x1, self.y1, self.z1
-		self.dsdz = np.sqrt(x1**2 + y1**2 + z1**2) # magnitude of first derivative of curve
+		self.dsdz = np.linalg.norm(np.concatenate((self.x1[:,np.newaxis],self.y1[:,np.newaxis],self.z1[:,np.newaxis]),axis=1),axis=1)
+		#self.dsdz = np.sqrt(x1**2 + y1**2 + z1**2) # magnitude of first derivative of curve
 
 	def get_dsdz(self):
 		return self.dsdz

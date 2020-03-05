@@ -24,7 +24,9 @@ class Surface:
 
 	def calc_alpha(self):
 		torsion = self.axis.get_torsion()
+		mean_torsion = self.axis.get_mean_torsion()
 		d_zeta = 2. * PI / self.NZ
+		torsion = torsion - mean_torsion
 		torsionInt = (np.cumsum(torsion) - torsion) * d_zeta
 		zeta = self.axis.get_zeta()
 		self.alpha = 0.5 * self.NR * zeta + self.zeta_off - torsionInt
@@ -140,4 +142,7 @@ class Surface:
 
 	def get_sg(self):
 		return self.sg
+
+	def get_axis(self):
+		return self.axis
 
