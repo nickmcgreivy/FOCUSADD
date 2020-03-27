@@ -1,54 +1,84 @@
-from .Axis import Axis
 import numpy as np
 import math as m
+from .readAxis import readAxis
 
 PI = m.pi
 
 class Surface:
 
-	def __init__(self, axis, num_zeta, num_theta, epsilon, minor_rad, N_rotate, zeta_off,s):
-		self.axis = axis
+	"""
+	Represents the outer magnetic surface of the plasma. 
+	"""
+
+	def __init__(self, filename, num_zeta, num_theta, s):
+		"""
+		Initializes the magnetic surface. 
+
+		Inputs:
+
+		filename (string): the location of the axis file
+		num_zeta (int): The number of gridpoints on the surface in the toroidal direction (zeta)
+		num_theta (int): The number of gridpoints on the surface in the poloidal direction (theta)
+		epsilon (float): The ellepticity of the surface
+		minor_rad (float): The minor radius of the surface
+		N_rotate (int): The number of times the surface twists in space.
+		zeta_off (float): The offset of the rotation of the ellipse at zeta = 0.
+		s (float): The scale factor for the surface. In FOCUSADD this is usually set to 1.
+		"""
+		self.filename = filename
+		self.axis = readAxis(self.filename, num_zeta)
+		self.epsilon = self.axis.epsilon
+		self.a = self.axis.a
+		self.NR = self.axis.NR
+		self.zeta_off = self.axis.zeta_off
 		self.NT = num_theta
 		self.NZ = num_zeta
-		self.epsilon = epsilon
-		self.a = minor_rad
-		self.NR = N_rotate
-		self.zeta_off = zeta_off
 		self.s = s
 		self.initialize_surface()
 
 	def initialize_surface(self):
-		self.calc_frame()
+		"""
+		Here we call three functions which are needed to initialize the surface. 
+		"""
+		self.v1, self.v2 = Surface.calc_frame(self.axis)
 		self.calc_r()
 		self.calc_nn()
 
-	def calc_alpha(self):
-		torsion = self.axis.get_torsion()
-		mean_torsion = self.axis.get_mean_torsion()
-		d_zeta = 2. * PI / self.NZ
-		torsion = torsion - mean_torsion
-		torsionInt = (np.cumsum(torsion) - torsion) * d_zeta
-		zeta = self.axis.get_zeta()
-		self.alpha = 0.5 * self.NR * zeta + self.zeta_off - torsionInt
-
-	def get_alpha(self):
-		return self.alpha
-
-	def calc_frame(self):
-		self.calc_alpha()
-		calpha = np.cos(self.alpha)
-		salpha = np.sin(self.alpha)
-		N = self.axis.get_normal()
-		B = self.axis.get_binormal()
-		self.v1 = calpha[:,np.newaxis] * N + salpha[:,np.newaxis] * B
-		self.v2 = -salpha[:,np.newaxis] * N + calpha[:,np.newaxis] * B
+	def calc_frame(axis):
+		""" 
+		Calculates the vectors v1 and v2 which are the ellipse frame. The normal and 
+		binormal get rotated by alpha. 
+		"""
+		alpha = axis.get_alpha()
+		calpha = np.cos(alpha)
+		salpha = np.sin(alpha)
+		N = axis.get_normal()
+		B = axis.get_binormal()
+		v1 = calpha[:,np.newaxis] * N + salpha[:,np.newaxis] * B
+		v2 = -salpha[:,np.newaxis] * N + calpha[:,np.newaxis] * B
+		return v1, v2
 
 	def get_frame(self):
+		""" Returns the vectors v1 and v2 which give the ellipse frame for a given zeta. """
 		return self.v1, self.v2
 
 	def calc_r(self):
+		"""
+		The surface is a 2d toroidal surface which surrounds the axis. The surface is discretized
+		into NZ+1 x NT+1 gridpoints, which are periodic in zeta and theta. 
+
+		We compute two variables:
+
+		self.r : NZ+1 x NT+1 x 3 array with the gridpoints
+		self.r_central : NZ x NT x 3 array with the position at the center of the NZ x NT tiles in the grid.
+
+		The equation for r is 
+
+		r = r_axis + s * a * [sqrt(epsilon) * cos(theta) * v1(zeta) + sin(theta) * v2(zeta) / sqrt(epsilon)]
+
+		"""
 		r = np.zeros((self.NZ+1,self.NT+1,3))
-		sa = self.s * self.a
+		sa = self.s * self.a # multiply by scale
 		zeta = self.axis.get_zeta()
 		theta = np.linspace(0.,2.*PI,self.NT+1)
 		ctheta = np.cos(theta)
@@ -60,22 +90,56 @@ class Surface:
 		self.r = r
 		self.r_central = (self.r[1:,1:,:] + self.r[1:,:-1,:] + self.r[:-1,1:,:] + self.r[:-1,:-1,:]) / 4.
 
+	def get_r(self):
+		""" Returns the surface positions, with shape NZ+1 x NT+1 x 3 """
+		return self.r
+
+	def get_r_central(self):
+		""" Returns the surface positions, with shape NZ x NT x 3 """
+		return self.r_central
+
 
 	def calc_r_coils(self,num_coils,num_segments,coil_radius):
+		"""
+		This function is used in the initialization of the coil set. We initialize the coil set a constant
+		distance from the magnetic surface, and this allows us to initialize these coils a certain distance away.
+		Since the surface is elliptically shaped at each cross-section, the coils will be initialized with
+		and elliptical shape. 
+
+		Inputs:
+		
+		num_coils (int) : the number of coils
+		num_segments (int) : The number of segments in each coil. Since the coils are periodic, there are 1 more
+		gridpoints than there are segments. 
+		coil_radius (float) : The distance between the magnetic axis and the coils. If s, the scale of the surface, is 1,
+		then setting coil_radius=2 will give us coils twice the surface radius. 
+
+		"""
+
 		r = np.zeros((num_coils,num_segments+1,3))
-		sa = coil_radius * self.a
-		spacing = int(self.NZ/num_coils)
-		zeta = self.axis.get_zeta()[0:self.NZ:spacing]
+		resAxis2 = 100 # how high resolution is the axis
+		axis2 = readAxis(self.filename, num_coils * resAxis2)
+		sa = coil_radius * axis2.a
+		zetaCoils = axis2.get_zeta()[::resAxis2]
 		theta = np.linspace(0.,2.*PI,num_segments+1)
 		ctheta = np.cos(theta)
 		stheta = np.sin(theta)
-		ep = self.epsilon
-		r += self.axis.get_r()[0:self.NZ:spacing,np.newaxis,:]
-		r += sa * np.sqrt(ep) * self.v1[0:self.NZ:spacing,np.newaxis,:] * ctheta[np.newaxis,:,np.newaxis]
-		r += sa * self.v2[0:self.NZ:spacing,np.newaxis,:] * stheta[np.newaxis,:,np.newaxis] / np.sqrt(ep)
+		ep = axis2.epsilon
+		v1, v2 = Surface.calc_frame(axis2)
+		r += axis2.get_r()[::resAxis2,np.newaxis,:]
+		r += sa * np.sqrt(ep) * v1[::resAxis2,np.newaxis,:] * ctheta[np.newaxis,:,np.newaxis]
+		r += sa * v2[::resAxis2,np.newaxis,:] * stheta[np.newaxis,:,np.newaxis] / np.sqrt(ep)
 		return r
 		
 	def calc_drdt(self):
+		"""
+		We need dr/dtheta to compute the normal vector to the surface. 
+
+		The equation for dr/dtheta is
+
+		dr/theta = s * a * [-sqrt(epsilon) * sin(theta) * v1(zeta) + cos(theta) * v2(zeta) / sqrt(epsilon)]
+		"""
+
 		drdt = np.zeros((self.NZ+1,self.NT+1,3))
 		s=1.
 		sa = s * self.a
@@ -89,9 +153,18 @@ class Surface:
 		self.drdt = drdt
 
 	def get_drdt(self):
+		""" Returns dr/dtheta """
 		return self.drdt
 
 	def calc_drdz(self):
+		"""
+		We need dr/dtheta to compute the normal vector to the surface. 
+
+		The equation for dr/dtheta is complicated and given in the FOCUSADD
+		theory document. 
+
+		"""
+
 		drdz = np.zeros((self.NZ+1,self.NT+1,3))
 		s=1.
 		sa = s * self.a
@@ -101,8 +174,9 @@ class Surface:
 		stheta = np.sin(theta)
 		ep = self.epsilon
 		drdz += self.axis.get_r1()[:,np.newaxis,:]
-		calpha = np.cos(self.alpha)
-		salpha = np.sin(self.alpha)
+		alpha = self.axis.get_alpha()
+		calpha = np.cos(alpha)
+		salpha = np.sin(alpha)
 		dNdz = self.axis.get_dNdz()
 		dBdz = self.axis.get_dBdz()
 		dalphadz = self.NR / 2. - self.axis.get_torsion()
@@ -121,15 +195,15 @@ class Surface:
 
 
 	def get_drdz(self):
+		""" Returns dr/dzeta """ 
 		return self.drdz
 
-	def get_r(self):
-		return self.r
-
-	def get_r_central(self):
-		return self.r_central
-
 	def calc_nn(self):
+		""" 
+		Computes the surface area of each tile and the surface unit normal vector for each tile. 
+
+		n = dr/dtheta x dr/dzeta / |dr/dtheta x dr/dzeta|
+		"""
 		self.calc_drdt()
 		self.calc_drdz()
 		nn = np.cross(self.drdt, self.drdz)
@@ -138,9 +212,14 @@ class Surface:
 		self.nn = nn / self.sg[:,:,np.newaxis]
 
 	def get_nn(self):
+		"""
+		Returns the surface unit normal vector. There is one
+		normal vector for each tile of the surface grid, so this has length NZ x NT x 3. 
+		"""
 		return self.nn
 
 	def get_sg(self):
+		""" Returns the surface area for each surface grid tile. This has length NZ x NT. """
 		return self.sg
 
 	def get_axis(self):

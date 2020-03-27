@@ -11,13 +11,17 @@ def readAxis(filename, N_zeta):
 	Parameters: 
 		filename (string): A path to the file which has the axis data
 		N_zeta_axis (int): The toroidal (zeta) resolution of the magnetic axis in real space
+		epsilon: The ellipticity of the axis
+		minor_rad: The minor radius of the axis, a
+		N_rotate: Number of rotations of the axis
+		zeta_off: The offset of the rotation of the surface in the ellipse relative to the zero starting point. 
 
 	Returns: 
 		axis (Axis): An axis object for the specified parameters.
 	"""
 	with open(filename, "r") as file:
 		file.readline()
-		NFaxis, NP = map(int,file.readline().split(" ")) 
+		_, _ = map(int,file.readline().split(" ")) 
 		file.readline()
 		xc = np.asarray([float(c) for c in file.readline().split(" ")])
 		file.readline()
@@ -39,7 +43,7 @@ def readAxis(filename, N_zeta):
 		file.readline()
 		epsilon, minor_rad, N_rotate, zeta_off = map(float, file.readline().split(' '))
 
-	return Axis(xc, xs, yc, ys, zc, zs, N_zeta), epsilon, minor_rad, N_rotate, zeta_off
+	return Axis(xc, xs, yc, ys, zc, zs, N_zeta, epsilon, minor_rad, N_rotate, zeta_off) 
 		
 
 
