@@ -11,6 +11,8 @@ from optimizers.ODEFlow import ODEFlow
 from optimizers.Newton import Newton
 from shapeGradient.ShapeGradient import ShapeGradient
 import math
+import csv
+
 
 PI = math.pi
 def setArgs():
@@ -79,9 +81,10 @@ def main():
 	for i in range(int(args.numIter)):
 		loss_val, params = optim.step(params) # loss_val is for old params, params is new params
 		loss_vals.append(loss_val)
-	
-	with open("{}.txt".format(output_file), 'w') as f:  # Use file to refer to the file object
-		f.write(loss_vals)
+
+	with open("{}.txt".format(output_file), 'wb') as f:
+    	wr = csv.writer(f, quoting=csv.QUOTE_ALL)
+    	wr.writerow(loss_vals)
 
 	
 	coilSet.set_params(params)
