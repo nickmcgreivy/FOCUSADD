@@ -84,7 +84,7 @@ def main():
 		loss_vals.append(loss_val)
 		print(loss_val)
 
-	with open("{}.txt".format(output_file), 'wb') as f:
+	with open("{}.txt".format(output_file), 'w') as f:
 		wr = csv.writer(f, quoting=csv.QUOTE_ALL)
 		wr.writerow(loss_vals)
 
