@@ -32,7 +32,7 @@ class LossFunction:
 		sum so that we can compute gradients of the surface magnetic normal if we'd like. 
 
 		"""
-		B = biotSavart(r,I,dl,l) # NZ x NT x 3
+		B = LossFunction.biotSavart(r,I,dl,l) # NZ x NT x 3
 		return .5 * np.sum(nn * B, axis=-1)**2 * sg #NZ x NT 
 
 	def biotSavart(r, I, dl, l):
