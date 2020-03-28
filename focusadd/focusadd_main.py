@@ -62,7 +62,8 @@ def main():
 	args_dict = create_args_dict(args)
 
 	input_file = args.inputFile
-	output_file = 'coils/saved/{}.hdf5'.format(args.outputFile)
+	#output_file = 'coils/saved/{}.hdf5'.format(args.outputFile)
+	output_file = args.output_file
 
 
 	if input_file is not None:
@@ -81,6 +82,7 @@ def main():
 	for i in range(int(args.numIter)):
 		loss_val, params = optim.step(params) # loss_val is for old params, params is new params
 		loss_vals.append(loss_val)
+		print(loss_val)
 
 	with open("{}.txt".format(output_file), 'wb') as f:
 		wr = csv.writer(f, quoting=csv.QUOTE_ALL)
