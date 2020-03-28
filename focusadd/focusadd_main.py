@@ -15,7 +15,7 @@ import math
 PI = math.pi
 def setArgs():
 	parser = argparse.ArgumentParser()
-	parser.add_argument("-n","--numIter", help="Number of iterations by the optimizer", default=40)
+	parser.add_argument("-n","--numIter", help="Number of iterations by the optimizer", default=500)
 	parser.add_argument("-nt","--numTheta", help="Number of gridpoints in theta (poloidal angle) on the magnetic surface", default=32)
 	parser.add_argument("-nz","--numZeta", help="Number of gridpoints in zeta (toroidal angle) on the magnetic surface", default=64)
 	parser.add_argument("-nc","--numCoils", help="Number of coils", default=8)
@@ -29,10 +29,10 @@ def setArgs():
 	parser.add_argument("-rc","--radiusCoil", help="Radius of coils", default=2.0)
 	parser.add_argument("-rs","--radiusSurface", help="Radius of surface", default=1.0)
 	parser.add_argument("-nr","--numRotate", help="Number of rotations of each finite-build coil", default=0)
-	parser.add_argument("-lr","--learningRate", help="Learning Rate of SGD, ODEFlow, Newtons Method", default=0.0001)
+	parser.add_argument("-lr","--learningRate", help="Learning Rate of SGD, ODEFlow, Newtons Method", default=0.001)
 	parser.add_argument("-o" ,"--outputFile", help="Name of output file for coils", default="simpleTest")
 	parser.add_argument("-i" ,"--inputFile", help="Name of input file for coils", default=None)
-	parser.add_argument("-w" ,"--weightLength", help="Length of weight paid to coils", default=0.01)
+	parser.add_argument("-w" ,"--weightLength", help="Length of weight paid to coils", default=0.1)
 	parser.add_argument("-a","--axis",help="Name of axis file", default="defaultAxis")
 	return parser.parse_args()
 
@@ -73,14 +73,19 @@ def main():
 
 	params = coilSet.get_params()
 
+	loss_vals = []
+
 	# PERFORM OPTIMIZATION
 	for i in range(int(args.numIter)):
 		loss_val, params = optim.step(params) # loss_val is for old params, params is new params
-		print(loss_val)
+		loss_vals.append(loss_val)
+	
+	with open("{}.txt".format(output_file), 'w') as f:  # Use file to refer to the file object
+		f.write(loss_vals)
 
 	
 	coilSet.set_params(params)
-	coilSet.write(output_file)
+	coilSet.write("{}.hdf5".format(output_file))
 
 	#shapegrad = ShapeGradient(surface, coilSet)
 	#g = shapegrad.coil_gradient()
