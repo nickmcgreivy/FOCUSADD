@@ -63,7 +63,7 @@ def main():
 
 	input_file = args.inputFile
 	#output_file = 'coils/saved/{}.hdf5'.format(args.outputFile)
-	output_file = args.output_file
+	output_file = args.outputFile
 
 
 	if input_file is not None:
