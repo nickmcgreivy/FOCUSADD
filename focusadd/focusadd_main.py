@@ -83,8 +83,8 @@ def main():
 		loss_vals.append(loss_val)
 
 	with open("{}.txt".format(output_file), 'wb') as f:
-    	wr = csv.writer(f, quoting=csv.QUOTE_ALL)
-    	wr.writerow(loss_vals)
+		wr = csv.writer(f, quoting=csv.QUOTE_ALL)
+		wr.writerow(loss_vals)
 
 	
 	coilSet.set_params(params)
