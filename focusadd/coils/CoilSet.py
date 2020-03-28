@@ -39,7 +39,7 @@ class CoilSet:
 			self.lb = args_dict['lengthBinormal']
 			self.NNR = args_dict['numNormalRotate']
 			self.NBR = args_dict['numBinormalRotate']
-			self.rc = args_dict['radiusCoil'] # initial radius
+			self.rc = args_dict['radiusCoil']
 			self.NR = args_dict['numRotate']
 			r_central = surface.calc_r_coils(self.NC,self.NS,self.rc) # Position of centroid
 			self.fc = self.compute_coil_fourierSeries(r_central)
@@ -47,7 +47,7 @@ class CoilSet:
 		else:
 			raise Exception("No file or args_dict passed to initialize coil set. ")
 		self.theta = np.linspace(0,2*PI,self.NS+1)
-		self.I = np.ones(self.NC)
+		self.I = np.ones(self.NC) / (self.NNR * self.NBR)
 		self.set_params((self.fc, self.fr))
 
 	def compute_coil_fourierSeries(self,r_central):
@@ -78,9 +78,9 @@ class CoilSet:
 			xc = index_add(xc,index[:,m], 2.0 * np.sum(x * np.cos(m * theta), axis=1) / self.NS )
 			yc = index_add(yc,index[:,m], 2.0 * np.sum(y * np.cos(m * theta), axis=1) / self.NS )
 			zc = index_add(zc,index[:,m], 2.0 * np.sum(z * np.cos(m * theta), axis=1) / self.NS )
-			xs = index_add(xs,index[:,m], 2.0 * np.sum(x * np.sin(m * theta), axis=1) / self.NS ) # - 
-			ys = index_add(ys,index[:,m], 2.0 * np.sum(y * np.sin(m * theta), axis=1) / self.NS ) # - 
-			zs = index_add(zs,index[:,m], 2.0 * np.sum(z * np.sin(m * theta), axis=1) / self.NS ) # - 
+			xs = index_add(xs,index[:,m], 2.0 * np.sum(x * np.sin(m * theta), axis=1) / self.NS ) 
+			ys = index_add(ys,index[:,m], 2.0 * np.sum(y * np.sin(m * theta), axis=1) / self.NS ) 
+			zs = index_add(zs,index[:,m], 2.0 * np.sum(z * np.sin(m * theta), axis=1) / self.NS ) 
 		return np.asarray([xc,yc,zc,xs,ys,zs]) # 6 x NC x NF
 
 	def write(self, output_file):
@@ -349,7 +349,6 @@ class CoilSet:
 		return self.r_middle
 	def get_I(self):
 		return self.I
-
 	
 	def compute_torsion(self):
 		r1 = self.get_r1() # NC x NS+1 x 3

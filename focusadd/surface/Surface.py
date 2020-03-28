@@ -120,15 +120,15 @@ class Surface:
 		resAxis2 = 100 # how high resolution is the axis
 		axis2 = readAxis(self.filename, num_coils * resAxis2)
 		sa = coil_radius * axis2.a
-		zetaCoils = axis2.get_zeta()[::resAxis2]
+		zetaCoils = axis2.get_zeta()[:-1:resAxis2]
 		theta = np.linspace(0.,2.*PI,num_segments+1)
 		ctheta = np.cos(theta)
 		stheta = np.sin(theta)
 		ep = axis2.epsilon
 		v1, v2 = Surface.calc_frame(axis2)
-		r += axis2.get_r()[::resAxis2,np.newaxis,:]
-		r += sa * np.sqrt(ep) * v1[::resAxis2,np.newaxis,:] * ctheta[np.newaxis,:,np.newaxis]
-		r += sa * v2[::resAxis2,np.newaxis,:] * stheta[np.newaxis,:,np.newaxis] / np.sqrt(ep)
+		r += axis2.get_r()[:-1:resAxis2,np.newaxis,:]
+		r += sa * np.sqrt(ep) * v1[:-1:resAxis2,np.newaxis,:] * ctheta[np.newaxis,:,np.newaxis]
+		r += sa * v2[:-1:resAxis2,np.newaxis,:] * stheta[np.newaxis,:,np.newaxis] / np.sqrt(ep)
 		return r
 		
 	def calc_drdt(self):
@@ -208,8 +208,8 @@ class Surface:
 		self.calc_drdz()
 		nn = np.cross(self.drdt, self.drdz)
 		nn = (nn[1:,1:,:] + nn[1:,:-1,:] + nn[:-1,1:,:] + nn[:-1,:-1,:]) / 4.
-		self.sg = np.linalg.norm(nn,axis=2)
-		self.nn = nn / self.sg[:,:,np.newaxis]
+		self.sg = np.linalg.norm(nn * 4 * PI**2 / (self.NT * self.NZ),axis=2)
+		self.nn = nn / np.linalg.norm(nn,axis=2)[:,:,np.newaxis]
 
 	def get_nn(self):
 		"""
