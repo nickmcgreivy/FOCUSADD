@@ -1,7 +1,7 @@
 import jax.numpy as np
 from jax import jit
 import math
-from memory_profiler import profile
+#from memory_profiler import profile
 PI = math.pi
 
 
