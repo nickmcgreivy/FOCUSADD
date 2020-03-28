@@ -346,6 +346,7 @@ class CoilSet:
 	def get_dl(self):
 		return self.dl
 	def get_r_middle(self):
+		""" self.r_middle is a NC x NS x NNR x NBR x 3 array which computes the midpoint of each of the NS segments """
 		return self.r_middle
 	def get_I(self):
 		return self.I

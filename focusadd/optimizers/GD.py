@@ -1,5 +1,4 @@
 import jax.numpy as np
-from jax import jit
 from optimizers.Optimizer import Optimizer
 
 class GD(Optimizer):
