@@ -1,9 +1,9 @@
- NC, NF
-     8     4
- Nn, Nb, NFF
-     1     1     0
- n_length, b_length
-  2.000000000000000E-002  2.000000000000000E-002
+NC, NF
+8 4
+Nn, Nb, NFF
+1 1 0
+n_length, b_length
+2.000000000000000E-002 2.000000000000000E-002
  Coil Number
   1
  NR
