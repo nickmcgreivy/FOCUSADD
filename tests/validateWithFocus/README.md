@@ -31,3 +31,11 @@ weightLength = 0.1
 
 The axis file is in focusadd/initFiles/axes/defaultAxis.txt. It has an epsilon value of 1.0, a minor radius of 0.1, N_rotate = 0 and zeta_off = 0.0. 
 
+
+The files are:
+
+validateFocus.hdf5 : Stores the coil result from FOCUSADD
+
+validateFocus.txt : Stores the loss function value as a function of time from FOCUSADD
+
+coils.out.txt : Coil result in .txt format from FORTRAN code
