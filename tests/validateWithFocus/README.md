@@ -39,3 +39,5 @@ validateFocus.hdf5 : Stores the coil result from FOCUSADD
 validateFocus.txt : Stores the loss function value as a function of time from FOCUSADD
 
 coils.out.txt : Coil result in .txt format from FORTRAN code
+
+compareCoils.ipynb : This plots the FORTRAN coils against the python coils. They are practically identical, which confirms that the code is working as I expect. 

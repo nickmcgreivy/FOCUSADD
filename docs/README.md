@@ -1,0 +1,1 @@
+FOCUSADDTheory.pdf is a document describing the mathematical structure of the code, focusing on the setup of the magnetic axis, the magnetic surface, the coil initialization, and then the loss function. The details of the Frenet-frame calculations should be laid out clearly in the document. 
