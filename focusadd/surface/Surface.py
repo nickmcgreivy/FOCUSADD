@@ -166,12 +166,12 @@ class Surface:
 		dBdz = self.axis.get_dBdz()
 		dalphadz = self.NR / 2. - self.axis.get_torsion()
 		dv1dz = calpha[:,np.newaxis] * dNdz \
-				- salpha[:,np.newaxis] * dBdz \
+				+ salpha[:,np.newaxis] * dBdz \
 				- self.axis.get_normal() * salpha[:,np.newaxis] * dalphadz[:,np.newaxis] \
-				- calpha[:,np.newaxis] * dalphadz[:,np.newaxis] * self.axis.get_binormal()
-		dv2dz = salpha[:,np.newaxis] * dNdz \
+				+ calpha[:,np.newaxis] * dalphadz[:,np.newaxis] * self.axis.get_binormal()
+		dv2dz = -salpha[:,np.newaxis] * dNdz \
 				+ calpha[:,np.newaxis] * dBdz \
-				+ calpha[:,np.newaxis] * dalphadz[:,np.newaxis] * self.axis.get_normal() \
+				- calpha[:,np.newaxis] * dalphadz[:,np.newaxis] * self.axis.get_normal() \
 				- salpha[:,np.newaxis] * dalphadz[:,np.newaxis] * self.axis.get_binormal()
 
 		drdz += sa * np.sqrt(ep) * dv1dz[:,np.newaxis,:] * ctheta[np.newaxis,:,np.newaxis]

@@ -359,8 +359,8 @@ class Axis:
 		salpha = np.sin(alpha)
 		N = self.get_normal()
 		B = self.get_binormal()
-		self.v1 = calpha[:,np.newaxis] * N - salpha[:,np.newaxis] * B
-		self.v2 = salpha[:,np.newaxis] * N + calpha[:,np.newaxis] * B
+		self.v1 = calpha[:,np.newaxis] * N + salpha[:,np.newaxis] * B
+		self.v2 = - salpha[:,np.newaxis] * N + calpha[:,np.newaxis] * B
 
 	def get_frame(self):
 		""" Returns the vectors v1 and v2 which give the ellipse frame for a given zeta. """
