@@ -343,7 +343,7 @@ class Axis:
 		tau = tau - av_tau # subtracts off <tau>
 		torsionInt = (np.cumsum(tau) - tau) * d_zeta # if i didn't subtract off tau this would be from 
 		zeta = self.get_zeta()
-		self.alpha = 0.5 * self.NR * zeta + self.zeta_off - torsionInt
+		self.alpha = 0.5 * self.NR * zeta + self.zeta_off + torsionInt
 
 	def get_alpha(self):
 		""" Returns the angle alpha by which the ellipse frame is rotated relative to the normal and binormal """
@@ -359,8 +359,8 @@ class Axis:
 		salpha = np.sin(alpha)
 		N = self.get_normal()
 		B = self.get_binormal()
-		self.v1 = calpha[:,np.newaxis] * N + salpha[:,np.newaxis] * B
-		self.v2 = - salpha[:,np.newaxis] * N + calpha[:,np.newaxis] * B
+		self.v1 = calpha[:,np.newaxis] * N - salpha[:,np.newaxis] * B
+		self.v2 = salpha[:,np.newaxis] * N + calpha[:,np.newaxis] * B
 
 	def get_frame(self):
 		""" Returns the vectors v1 and v2 which give the ellipse frame for a given zeta. """

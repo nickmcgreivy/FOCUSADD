@@ -164,14 +164,16 @@ class Surface:
 		salpha = np.sin(alpha)
 		dNdz = self.axis.get_dNdz()
 		dBdz = self.axis.get_dBdz()
-		dalphadz = self.NR / 2. - self.axis.get_torsion()
+		tau = self.axis.get_torsion() 
+		av_tau = self.axis.get_mean_torsion()
+		dalphadz = self.NR / 2. + tau - av_tau
 		dv1dz = calpha[:,np.newaxis] * dNdz \
-				+ salpha[:,np.newaxis] * dBdz \
+				- salpha[:,np.newaxis] * dBdz \
 				- self.axis.get_normal() * salpha[:,np.newaxis] * dalphadz[:,np.newaxis] \
-				+ calpha[:,np.newaxis] * dalphadz[:,np.newaxis] * self.axis.get_binormal()
-		dv2dz = -salpha[:,np.newaxis] * dNdz \
+				- calpha[:,np.newaxis] * dalphadz[:,np.newaxis] * self.axis.get_binormal()
+		dv2dz = salpha[:,np.newaxis] * dNdz \
 				+ calpha[:,np.newaxis] * dBdz \
-				- calpha[:,np.newaxis] * dalphadz[:,np.newaxis] * self.axis.get_normal() \
+				+ calpha[:,np.newaxis] * dalphadz[:,np.newaxis] * self.axis.get_normal() \
 				- salpha[:,np.newaxis] * dalphadz[:,np.newaxis] * self.axis.get_binormal()
 
 		drdz += sa * np.sqrt(ep) * dv1dz[:,np.newaxis,:] * ctheta[np.newaxis,:,np.newaxis]
