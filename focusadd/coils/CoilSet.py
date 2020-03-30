@@ -316,8 +316,8 @@ class CoilSet:
 			alpha += Ac[:,np.newaxis,m] * carg[np.newaxis,:] + As[:,np.newaxis,m] * sarg[np.newaxis,:]
 		calpha = np.cos(alpha)
 		salpha = np.sin(alpha)
-		self.v1 = calpha[:,:,np.newaxis] * self.normal + salpha[:,:,np.newaxis] * self.binormal
-		self.v2 = -salpha[:,:,np.newaxis] * self.normal + calpha[:,:,np.newaxis] * self.binormal
+		self.v1 = calpha[:,:,np.newaxis] * self.normal - salpha[:,:,np.newaxis] * self.binormal
+		self.v2 = salpha[:,:,np.newaxis] * self.normal + calpha[:,:,np.newaxis] * self.binormal
 
 	def get_frame(self):
 		return self.v1, self.v2

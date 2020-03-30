@@ -40,27 +40,10 @@ class Surface:
 		"""
 		Here we call three functions which are needed to initialize the surface. 
 		"""
-		self.v1, self.v2 = Surface.calc_frame(self.axis)
 		self.calc_r()
 		self.calc_nn()
 
-	def calc_frame(axis):
-		""" 
-		Calculates the vectors v1 and v2 which are the ellipse frame. The normal and 
-		binormal get rotated by alpha. 
-		"""
-		alpha = axis.get_alpha()
-		calpha = np.cos(alpha)
-		salpha = np.sin(alpha)
-		N = axis.get_normal()
-		B = axis.get_binormal()
-		v1 = calpha[:,np.newaxis] * N + salpha[:,np.newaxis] * B
-		v2 = -salpha[:,np.newaxis] * N + calpha[:,np.newaxis] * B
-		return v1, v2
 
-	def get_frame(self):
-		""" Returns the vectors v1 and v2 which give the ellipse frame for a given zeta. """
-		return self.v1, self.v2
 
 	def calc_r(self):
 		"""
@@ -84,9 +67,10 @@ class Surface:
 		ctheta = np.cos(theta)
 		stheta = np.sin(theta)
 		ep = self.epsilon
+		v1, v2 = self.axis.get_frame()
 		r += self.axis.get_r()[:,np.newaxis,:]
-		r += sa * np.sqrt(ep) * self.v1[:,np.newaxis,:] * ctheta[np.newaxis,:,np.newaxis]
-		r += sa * self.v2[:,np.newaxis,:] * stheta[np.newaxis,:,np.newaxis] / np.sqrt(ep)
+		r += sa * np.sqrt(ep) * v1[:,np.newaxis,:] * ctheta[np.newaxis,:,np.newaxis]
+		r += sa * v2[:,np.newaxis,:] * stheta[np.newaxis,:,np.newaxis] / np.sqrt(ep)
 		self.r = r
 		self.r_central = (self.r[1:,1:,:] + self.r[1:,:-1,:] + self.r[:-1,1:,:] + self.r[:-1,:-1,:]) / 4.
 
@@ -125,7 +109,7 @@ class Surface:
 		ctheta = np.cos(theta)
 		stheta = np.sin(theta)
 		ep = axis2.epsilon
-		v1, v2 = Surface.calc_frame(axis2)
+		v1, v2 = axis2.get_frame()
 		r += axis2.get_r()[:-1:resAxis2,np.newaxis,:]
 		r += sa * np.sqrt(ep) * v1[:-1:resAxis2,np.newaxis,:] * ctheta[np.newaxis,:,np.newaxis]
 		r += sa * v2[:-1:resAxis2,np.newaxis,:] * stheta[np.newaxis,:,np.newaxis] / np.sqrt(ep)
@@ -148,8 +132,9 @@ class Surface:
 		ctheta = np.cos(theta)
 		stheta = np.sin(theta)
 		ep = self.epsilon
-		drdt -= sa * np.sqrt(ep) * self.v1[:,np.newaxis,:] * stheta[np.newaxis,:,np.newaxis]
-		drdt += sa * self.v2[:,np.newaxis,:] * ctheta[np.newaxis,:,np.newaxis] / np.sqrt(ep)
+		v1, v2 = self.axis.get_frame()
+		drdt -= sa * np.sqrt(ep) * v1[:,np.newaxis,:] * stheta[np.newaxis,:,np.newaxis]
+		drdt += sa * v2[:,np.newaxis,:] * ctheta[np.newaxis,:,np.newaxis] / np.sqrt(ep)
 		self.drdt = drdt
 
 	def get_drdt(self):
@@ -181,12 +166,12 @@ class Surface:
 		dBdz = self.axis.get_dBdz()
 		dalphadz = self.NR / 2. - self.axis.get_torsion()
 		dv1dz = calpha[:,np.newaxis] * dNdz \
-				+ salpha[:,np.newaxis] * dBdz \
+				- salpha[:,np.newaxis] * dBdz \
 				- self.axis.get_normal() * salpha[:,np.newaxis] * dalphadz[:,np.newaxis] \
-				+ calpha[:,np.newaxis] * dalphadz[:,np.newaxis] * self.axis.get_binormal()
-		dv2dz = - salpha[:,np.newaxis] * dNdz \
+				- calpha[:,np.newaxis] * dalphadz[:,np.newaxis] * self.axis.get_binormal()
+		dv2dz = salpha[:,np.newaxis] * dNdz \
 				+ calpha[:,np.newaxis] * dBdz \
-				- calpha[:,np.newaxis] * dalphadz[:,np.newaxis] * self.axis.get_normal() \
+				+ calpha[:,np.newaxis] * dalphadz[:,np.newaxis] * self.axis.get_normal() \
 				- salpha[:,np.newaxis] * dalphadz[:,np.newaxis] * self.axis.get_binormal()
 
 		drdz += sa * np.sqrt(ep) * dv1dz[:,np.newaxis,:] * ctheta[np.newaxis,:,np.newaxis]

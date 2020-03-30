@@ -61,6 +61,7 @@ class Axis:
 		self.compute_dBdz()
 		self.compute_dNdz()
 		self.calc_alpha()
+		self.calc_frame()
 
 
 	def compute_xyz(self):
@@ -348,6 +349,22 @@ class Axis:
 		""" Returns the angle alpha by which the ellipse frame is rotated relative to the normal and binormal """
 		return self.alpha
 
+	def calc_frame(self):
+		""" 
+		Calculates the vectors v1 and v2 which are the ellipse frame. The normal and 
+		binormal get rotated by alpha. 
+		"""
+		alpha = self.get_alpha()
+		calpha = np.cos(alpha)
+		salpha = np.sin(alpha)
+		N = self.get_normal()
+		B = self.get_binormal()
+		self.v1 = calpha[:,np.newaxis] * N - salpha[:,np.newaxis] * B
+		self.v2 = salpha[:,np.newaxis] * N + calpha[:,np.newaxis] * B
+
+	def get_frame(self):
+		""" Returns the vectors v1 and v2 which give the ellipse frame for a given zeta. """
+		return self.v1, self.v2
 
 
 
