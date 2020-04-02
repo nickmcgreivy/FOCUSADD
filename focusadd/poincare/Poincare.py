@@ -1,5 +1,6 @@
 import numpy as np
 import math
+from scipy.integrate import solve_ivp
 
 PI = math.pi
 
@@ -45,116 +46,16 @@ class Poincare():
 		B_theta = - B_x * np.sin(theta) + B_y * np.cos(theta)
 		return B_r, B_theta, B_z
 
-	def odeStep(self,r,theta,z):
-		"""
-			Uses the 4th-order Runge-Kutta integration scheme to integrate along the ODEs
-			describing the magnetic field. 
-
-			Inputs:
-
-			r, theta, z: The coordinates of the point we begin at during our integration.
-			dtheta: The step size in theta for the integration.
-
-			Outputs:
-
-			Fr : dr/dtheta, the change in the r-position of a field line per change in theta
-			Fz : dz/dtheta, the change in the z-position of a field line per change in theta
-		"""
+	def f(self,theta, arr):
+		r= arr[0]
+		z = arr[1]
 		B_r, B_theta, B_z = self.computeB(r, theta, z) 
 		Fr = (B_r * r / B_theta)
 		Fz = (B_z * r / B_theta)
-		return Fr, Fz
+		return (Fr, Fz)
 
 
-	def rkStep(self, r_i, theta_i, z_i,dtheta):
-		""" 
-		A single Runge-Kutta fourth order step 
-
-		Inputs
-
-		r_i , theta_i, z_i : The initial coordinates of the magnetic field line
-		dtheta : the step size of the Runge-Kutta step
-
-		Returns
-
-		r_f, theta_f, z_f : The final coordinates of the magnetic field line after
-		the Runge-Kutta step
-
-
-		""" 
-		Fr_1, Fz_1 = self.odeStep(r_i,theta_i,z_i)
-		r_2 = r_i + (dtheta/2.) * Fr_1
-		z_2 = z_i + (dtheta/2.) * Fz_1
-
-		Fr_2, Fz_2 = self.odeStep(r_2,theta_i + dtheta/2.,z_2)
-		r_3 = r_i + (dtheta/2.) * Fr_2
-		z_3 = z_i + (dtheta/2.) * Fz_2
-
-		Fr_3, Fz_3 = self.odeStep(r_3, theta_i + dtheta/2., z_3)
-		r_4 = r_i + dtheta * Fr_3
-		z_4 = z_i + dtheta * Fz_3
-
-		Fr_4, Fz_4 = self.odeStep(r_4, theta_i + dtheta, z_4)
-
-
-
-		r_f = r_i + dtheta * (Fr_1 + 2. * Fr_2 + 2. * Fr_3 + Fr_4) / 6. 
-		theta_f = theta_i + dtheta
-		z_f = z_i + dtheta * (Fz_1 + 2. * Fz_2 + 2. * Fz_3 + Fz_4) / 6.
-		return r_f, theta_f, z_f
-
-
-	# Will want to parallelize
-	def odeIntegrate(self,r_i,theta_i,z_i,N_step,N_poincare):
-		"""
-			Integrates the magnetic field line flow around the torus for a single field line
-			to get a set of Poincare points for that field line. 
-
-			Inputs:
-
-			r_i, theta_i, z_i: The initial coordinate of the field line
-			N_step: The number of Runge-Kutta steps per transit around the torus; dtheta = 2pi/N_step
-			N_poincare: The number of rotations around the torus, which gives the number of Poincare points
-
-			Outputs:
-
-			x, y, z: Lists of length N_poincare of x, y, and z points where the magnetic field line crosses the initial theta. 
-		"""
-		#rs = np.zeros(N_poincare*N_step+1)
-		#thetas = np.zeros(N_poincare*N_step+1)
-		#zs = np.zeros(N_poincare*N_step+1)
-		#rs =np.zeros(N_poincare+1) 
-		#thetas = np.zeros(N_poincare+1)
-		#zs = np.zeros(N_poincare+1)
-		rs = []
-		thetas = []
-		zs = []
-
-		rs.append(r_i)
-		thetas.append(theta_i)
-		zs.append(z_i)
-		dtheta = 2. * PI / N_step
-
-		r = r_i
-		theta = theta_i
-		z = z_i
-
-		for i in range(N_poincare):
-			for j in range(N_step):
-				r, theta, z = self.rkStep(r,theta,z,dtheta)
-			theta = theta % (2 * PI)
-			rs.append(r)
-			thetas.append(theta)
-			zs.append(z)
-		return rs, thetas, zs
-
-
-
-
-
-
-
-	def getPoincarePoints(self,N_step,N_poincare,theta,radii):
+	def getPoincarePoints(self,N_poincare,theta,radii):
 		"""
 
 			NOTE: THIS ONLY WORKS FOR THETA = 0 RIGHT NOW
@@ -165,7 +66,6 @@ class Poincare():
 
 			Inputs:
 
-			N_step : number of RK steps per poincare transit, dtheta = 2pi/N_step
 			N_poincare : number of times we puncture the poincare plot, starting at radius r
 			theta : Which theta will our poincare plot track? We are getting a poloidal cross-section at theta.
 			radii : list of radii r which we start at, away from our magnetic axis. We expect this to range from 0 
@@ -185,23 +85,14 @@ class Poincare():
 		saep = self.axis.a * self.surface.s * np.sqrt(ep)
 		ct = np.cos(theta)
 		st = np.sin(theta)
-		rs = []
-		thetas = []
-		zs = []
+
+		ys = []
+		theta_i_f = [0, 2 * PI * (N_poincare-1)] # THIS LINE DOES TOO
+
 		for r in radii:
 			v1_normalized = r * saep * v1
-			r_i = r_axis + ct * v1_normalized[0] + st * v1_normalized[1]
-			# theta = theta
-			z_i = z_axis + v1[2]
-			rlist, thetalist, zlist = self.odeIntegrate(r_i, theta, z_i, N_step, N_poincare)
-			rs = rs + rlist
-			thetas = thetas + thetalist
-			zs = zs + zlist
-		return rs, thetas, zs
-
-
-
-
-
-	
+			#ys.append([r_axis + ct * v1_normalized[0] + st * v1_normalized[1],z_axis + v1_normalized[2]])
+			ys = [r_axis + ct * v1_normalized[0] + st * v1_normalized[1],z_axis + v1_normalized[2]]
+		sol = solve_ivp(self.f,theta_i_f,ys,t_eval=np.linspace(0,2*PI*(N_poincare-1),N_poincare),method='DOP853')
+		return sol
 
