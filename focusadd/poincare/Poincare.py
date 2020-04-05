@@ -1,4 +1,4 @@
-import numpy as np
+import jax.numpy as np
 import math
 from scipy.integrate import solve_ivp
 
@@ -73,7 +73,7 @@ class Poincare():
 
 			Outputs:
 
-			rs, thetas, zs : lists of floating point numbers where the field lines intersect at a given theta. 
+			rs, zs : lists of floating point numbers where the field lines intersect at a given theta. 
 
 		"""
 
@@ -86,13 +86,17 @@ class Poincare():
 		ct = np.cos(theta)
 		st = np.sin(theta)
 
-		ys = []
-		theta_i_f = [0, 2 * PI * (N_poincare-1)] # THIS LINE DOES TOO
+		rs = []
+		zs = []
+		theta_i_f = [0, 2 * PI * (N_poincare)] # THIS LINE DOES TOO
 
 		for r in radii:
 			v1_normalized = r * saep * v1
 			#ys.append([r_axis + ct * v1_normalized[0] + st * v1_normalized[1],z_axis + v1_normalized[2]])
-			ys = [r_axis + ct * v1_normalized[0] + st * v1_normalized[1],z_axis + v1_normalized[2]]
-		sol = solve_ivp(self.f,theta_i_f,ys,t_eval=np.linspace(0,2*PI*(N_poincare-1),N_poincare),method='DOP853')
-		return sol
+			y = [r_axis + ct * v1_normalized[0] + st * v1_normalized[1],z_axis + v1_normalized[2]]
+			sol = solve_ivp(self.f,theta_i_f,y,t_eval=np.linspace(0,2*PI*(N_poincare),N_poincare+1),method='DOP853')
+			rs.append(np.ndarray.tolist(sol.y[0]))
+			zs.append(np.ndarray.tolist(sol.y[1]))
+
+		return rs, zs
 

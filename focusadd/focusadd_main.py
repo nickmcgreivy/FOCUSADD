@@ -1,4 +1,5 @@
 import argparse
+import time
 from surface.readAxis import readAxis
 from surface.Surface import Surface
 from surface.Axis import Axis
@@ -12,6 +13,8 @@ from optimizers.Newton import Newton
 from shapeGradient.ShapeGradient import ShapeGradient
 import math
 import csv
+#from jax.config import config
+#config.update("jax_enable_x64",True)
 
 
 PI = math.pi
@@ -77,13 +80,15 @@ def main():
 	params = coilSet.get_params()
 
 	loss_vals = []
-
+	start = time.time()
 	# PERFORM OPTIMIZATION
 	for i in range(int(args.numIter)):
 		loss_val, params = optim.step(params) # loss_val is for old params, params is new params
 		loss_vals.append(loss_val)
 		print(loss_val)
-
+	
+	end = time.time()
+	print(end - start)
 	with open("{}.txt".format(output_file), 'w') as f:
 		wr = csv.writer(f, quoting=csv.QUOTE_ALL)
 		wr.writerow(loss_vals)

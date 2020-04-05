@@ -1,4 +1,4 @@
-import jax.numpy as np
+import numpy as np
 import matplotlib.pyplot as plt
 import sys
 import time
@@ -14,16 +14,16 @@ coilSet = CoilSet(surface,input_file="../../tests/validateWithFocus/validateFOCU
 
 pc = Poincare(coilSet, surface)
 
-radii = np.linspace(0.000,1.2,1)
+radii = np.linspace(0.0,1.2,4)
 
 start = time.time()
 
-sol = pc.getPoincarePoints(6,0.0,radii)
+rs, zs = pc.getPoincarePoints(200,0.0,radii)
 
 end = time.time()
 print(end-start)
-print(sol.t)
-print(sol.y)
+print(rs)
+print(zs)
 
-plt.plot(sol.y[0],sol.y[1],'k,', markersize=2)
+plt.plot(rs,zs,'ko', markersize=1)
 plt.show()

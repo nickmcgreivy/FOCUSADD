@@ -382,3 +382,18 @@ class CoilSet:
 		pass
 	"""
 
+	def writeXYZ(self,params,filename):
+		self.set_params(params)
+		with open(filename,'w') as f:
+			f.write("periods {}\n".format(0))
+			f.write("begin filament\n")
+			f.write("FOCUSADD Coils\n")
+			for i in range(self.NC):
+				for n in range(self.NNR):
+					for b in range(self.NBR):
+						for s in range(self.NS):
+							f.write("{} {} {} {}\n".format(self.r[i,s,n,b,0],self.r[i,s,n,b,1],self.r[i,s,n,b,2],self.I[i]))
+						f.write("{} {} {} {} {} {}\n".format(self.r[i,self.NS,n,b,0],self.r[i,self.NS,n,b,1],self.r[i,self.NS,n,b,2],0.0,"{}{}{}".format(i,n,b),"coil/filament1/filament2"))
+
+
+
