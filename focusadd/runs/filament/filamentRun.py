@@ -1,5 +1,7 @@
 import argparse
 import time
+import sys
+sys.path.append("../..")
 from surface.readAxis import readAxis
 from surface.Surface import Surface
 from surface.Axis import Axis
@@ -95,7 +97,7 @@ def main():
 	args_finite_build = setArgsFiniteBuild()
 
 	# Create the surface
-	surface = Surface("./initFiles/axes/{}.txt".format(args.axis), int(args.numZeta), int(args.numTheta), float(args.radiusSurface))
+	surface = Surface("../../initFiles/axes/{}.txt".format(args.axis), int(args.numZeta), int(args.numTheta), float(args.radiusSurface))
 
 	args_dict = create_args_dict(args)
 	args_dict_finite_build = create_args_dict(args_finite_build)
@@ -135,8 +137,9 @@ def main():
 			loss_val, params = optim.step(params) 
 			loss_vals.append(loss_val)
 			print(loss_val)
-	except KeyboardInterrupt:
-		continue
+	except KeyboardInterrupt as e:
+		endRun(output_file, loss_vals, loss_vals_finite_build,coilSet,params)
+		raise e	
 	end = time.time()
 	print(end - start)
 	
