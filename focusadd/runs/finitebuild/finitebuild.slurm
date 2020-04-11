@@ -11,4 +11,4 @@
 module load anaconda3
 conda activate jax-cpu
 
-python filamentRun.py -n 10
+python finitebuildRun.py -n 10
