@@ -12,7 +12,7 @@ class DefaultLoss(LossFunction):
 		super().__init__(surface,coil_set)
 		self.weight_length = weight_length
 
-	@partial(jit, static_argnums=(0,))
+	#@partial(jit, static_argnums=(0,))
 	def loss(self,params):
 		""" 
 		Computes the default loss: int (B dot n)^2 dA + weight_length * len(coils) 

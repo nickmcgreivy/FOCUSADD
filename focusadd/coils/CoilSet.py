@@ -105,7 +105,7 @@ class CoilSet:
 		""" Returns a tuple of the coil parameters, fourier series and rotation series"""
 		return (self.fc, self.fr)
 
-	@partial(jit, static_argnums=(0,))
+	#@partial(jit, static_argnums=(0,))
 	def set_params(self, params):
 		""" 
 		Takes a tuple of coil parameters and sets the parameters. When the 
