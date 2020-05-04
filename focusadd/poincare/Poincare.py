@@ -94,7 +94,7 @@ class Poincare():
 			v1_normalized = r * saep * v1
 			#ys.append([r_axis + ct * v1_normalized[0] + st * v1_normalized[1],z_axis + v1_normalized[2]])
 			y = [r_axis + ct * v1_normalized[0] + st * v1_normalized[1],z_axis + v1_normalized[2]]
-			sol = solve_ivp(self.f,theta_i_f,y,t_eval=np.linspace(0,2*PI*(N_poincare),N_poincare+1),method='DOP853')
+			sol = solve_ivp(self.f,theta_i_f,y,t_eval=np.linspace(0,2*PI*(N_poincare),N_poincare+1),method='DOP853',atol=5e-8,rtol=5e-6)
 			rs.append(np.ndarray.tolist(sol.y[0]))
 			zs.append(np.ndarray.tolist(sol.y[1]))
 

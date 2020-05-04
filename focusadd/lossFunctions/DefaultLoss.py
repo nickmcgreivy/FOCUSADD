@@ -1,4 +1,5 @@
-from lossFunctions.LossFunction import LossFunction
+#from lossFunctions.LossFunction import LossFunction
+from .LossFunction import LossFunction
 import jax.numpy as np
 import math
 
