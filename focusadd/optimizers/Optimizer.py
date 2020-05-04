@@ -1,4 +1,5 @@
 from jax import value_and_grad
+from functools import partial
 
 class Optimizer:
 

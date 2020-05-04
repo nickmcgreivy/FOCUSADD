@@ -2,6 +2,8 @@
 from .LossFunction import LossFunction
 import jax.numpy as np
 import math
+from functools import partial
+from jax import jit
 
 PI = math.pi 
 class DefaultLoss(LossFunction):
@@ -10,6 +12,7 @@ class DefaultLoss(LossFunction):
 		super().__init__(surface,coil_set)
 		self.weight_length = weight_length
 
+	@partial(jit, static_argnums=(0,))
 	def loss(self,params):
 		""" 
 		Computes the default loss: int (B dot n)^2 dA + weight_length * len(coils) 

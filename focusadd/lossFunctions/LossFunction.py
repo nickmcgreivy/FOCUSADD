@@ -11,6 +11,7 @@ class LossFunction:
 		self.surface = surface
 		self.coil_set = coil_set
 
+	@jit
 	def bnsquared(r, I, dl, l, nn, sg):
 		""" 
 
@@ -35,6 +36,7 @@ class LossFunction:
 		B = LossFunction.biotSavart(r,I,dl,l) # NZ x NT x 3
 		return .5 * np.sum(nn * B, axis=-1)**2 * sg #NZ x NT 
 
+	@jit
 	def biotSavart(r, I, dl, l):
 		"""
 		Inputs:

@@ -13,6 +13,7 @@ from optimizers.Newton import Newton
 from shapeGradient.ShapeGradient import ShapeGradient
 import math
 import csv
+from functools import partial
 #from jax.config import config
 #config.update("jax_enable_x64",True)
 
@@ -20,7 +21,7 @@ import csv
 PI = math.pi
 def setArgs():
 	parser = argparse.ArgumentParser()
-	parser.add_argument("-n","--numIter", help="Number of iterations by the optimizer", default=500)
+	parser.add_argument("-n","--numIter", help="Number of iterations by the optimizer", default=10)
 	parser.add_argument("-nt","--numTheta", help="Number of gridpoints in theta (poloidal angle) on the magnetic surface", default=32)
 	parser.add_argument("-nz","--numZeta", help="Number of gridpoints in zeta (toroidal angle) on the magnetic surface", default=64)
 	parser.add_argument("-nc","--numCoils", help="Number of coils", default=8)
@@ -73,6 +74,7 @@ def main():
 		coilSet = CoilSet(surface,input_file='coils/saved/{}.hdf5'.format(input_file))
 	else:
 		coilSet = CoilSet(surface,args_dict = args_dict)
+
 
 	l = DefaultLoss(surface, coilSet, weight_length=float(args.weightLength))
 	optim = GD(l, learning_rate=float(args.learningRate))
