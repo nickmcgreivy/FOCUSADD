@@ -1,8 +1,10 @@
 import jax.numpy as np
+from jax import jit
 import numpy as numpy
 from jax.ops import index, index_add
 import math as m
 import tables as tb
+from functools import partial
 
 PI = m.pi
 
@@ -103,6 +105,7 @@ class CoilSet:
 		""" Returns a tuple of the coil parameters, fourier series and rotation series"""
 		return (self.fc, self.fr)
 
+	#@partial(jit, static_argnums=(0,))
 	def set_params(self, params):
 		""" 
 		Takes a tuple of coil parameters and sets the parameters. When the 

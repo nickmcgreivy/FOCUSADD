@@ -13,6 +13,7 @@ from optimizers.Newton import Newton
 from shapeGradient.ShapeGradient import ShapeGradient
 import math
 import csv
+from functools import partial
 #from jax.config import config
 #config.update("jax_enable_x64",True)
 
@@ -73,6 +74,7 @@ def main():
 		coilSet = CoilSet(surface,input_file='coils/saved/{}.hdf5'.format(input_file))
 	else:
 		coilSet = CoilSet(surface,args_dict = args_dict)
+
 
 	l = DefaultLoss(surface, coilSet, weight_length=float(args.weightLength))
 	optim = GD(l, learning_rate=float(args.learningRate))

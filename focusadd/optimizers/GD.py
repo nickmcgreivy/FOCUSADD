@@ -1,5 +1,6 @@
 import jax.numpy as np
 from optimizers.Optimizer import Optimizer
+from functools import partial
 
 class GD(Optimizer):
 
