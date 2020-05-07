@@ -17,7 +17,7 @@ class GD(Optimizer):
 		Output: (loss, new_params), a tuple with the loss_val and the new parameters
 
 		"""
-
+		"""
 		loss_val, grad = self.value_and_grad(params)
 
 		delta = tuple(self.learning_rate * g for g in grad)
@@ -25,4 +25,9 @@ class GD(Optimizer):
 		dc, dr = delta
 		new_params = (fc - dc, fr - dr)
 		return loss_val, new_params
+		"""
+		
+		loss_val, grad = self.value_and_grad(params)
 
+		new_params = tuple(map(lambda old_param, g: old_param - self.learning_rate * g, params, grad)) 
+		return loss_val, new_params
