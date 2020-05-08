@@ -23,7 +23,6 @@ class SaddleCoilSet:
 
 	The (zeta, theta) surface is described by a Fourier transform which maps (zeta, theta) -> (x,y,z)
 
-
 	"""
 
 	def __init__(self,surface,input_file=None,args_dict=None):
@@ -35,18 +34,23 @@ class SaddleCoilSet:
 
 		The second method of initialization involves reading the coils in from args_dict, which is a dictionary
 		of the coil metadata. From this metadata and the surface we can initialize the coils around the surface. 
+	
 		"""
 
 		if input_file is not None:
-			with tb.open_file(input_file,'r') as f:
-				# # toroidal coils, # saddle coils, # toroidal segments, # saddle segments,
+			with tb.open_file(input_file, 'r') as f:
+				# num toroidal coils, num saddle coils, num toroidal segments, 
+				# num saddle segments, num fourier components of saddles,
 				# winding-surface number of fourier components in zeta,
-				# winding-surface number of fourier components in theta
-				self.NC_t, self.NC_s, self.NS_t, self.NS_s, self.NF_s, self.WSNFZ, self.WSNFT, self.rc_t, self.rc_s = f.root.metadata[0]
+				# winding-surface number of fourier components in theta,
+				# toroidal coil radius, initial saddle coil radius
+				self.NC_t, self.NC_s, self.NS_t, self.NS_s, self.NF_s, \
+					self.WSNFZ, self.WSNFT, self.rc_t, self.rc_s = \
+					f.root.metadata[0]
 				# NC_t x NS_t + 1 x 3 -> position of each toroidal coil
-				self.r_t = np.asarray(f.root.r_t[:,:,:])
+				self.r_t = np.asarray(f.root.r_t[:, :, :])
 				# 2 x 2 x NC_s x NF_s + 1 -> each saddle coil has a fourier series in zeta and theta (2) and sin and cos (2)
-				self.f_s = np.asarray(f.root.f_s[:,:,:,:]) 
+				self.f_s = np.asarray(f.root.f_s[:, :, :, :]) 
 				# NC_s -> each saddle coil has a different current
 				self.I_s = np.asarray(f.root.I_s[:]) 
 				# 3 x 2 x 2 x WSNFZ + 1 x WSNFT + 1 -> the mapping from (zeta, theta) -> (x,y,z)
@@ -66,12 +70,13 @@ class SaddleCoilSet:
 			self.WSNFZ = args_dict['windingSurfaceNumberFourierZeta']
 			self.WSNFT = args_dict['windingSurfaceNumberFourierTheta']
 			self.r_t = surface.calc_r_coils(self.NC_t,self.NS_t,self.rc_t)
+			# init saddle coils, f_s is 2 x 2 x NC_s x NF_s + 1, first 2 are zeta and theta, second 2 are sin and cos. 
 			self.f_s = self.initialize_fourier_saddle_coils(NC_s_zeta,NC_s_theta)
 			# initialize the saddle coils to have a current of 1
 			self.I_s = np.ones(self.NC_s)
 			# compute the fourier decomposition of the surface
-			r_surface = surface.calc_r_coils(256,128,self.r_ws)[:,0:-1,:] # using calc_r_coils as a proxy for the surface
-			self.winding_surface_fourier = self.compute_surface_fourier_series(r_surface)
+			self.r_w_surface = surface.calc_r_coils(256,128,self.r_ws)[:,0:-1,:] # using calc_r_coils as a proxy for the surface
+			self.winding_surface_fourier = self.compute_surface_fourier_series(self.r_w_surface)
 		else:
 			raise Exception("No file or args_dict passed to initialize coil set.")
 		self.r_t_middle = (self.r_t[:,1:,:] + self.r_t[:,:-1,:]) / 2.
@@ -81,14 +86,15 @@ class SaddleCoilSet:
 
 	def initialize_fourier_saddle_coils(self,NC_s_zeta,NC_s_theta):
 		result = np.zeros((2, 2, self.NC_s, self.NF_s + 1))
-		# update the zeta + theta [:], cosine [1], all coils[:], zeroth fourier [0] to be laid out on a grid
+		# update the zeta + theta, cosine [1], all coils[:], zeroth fourier [0] to be laid out on a grid
 		# then add an initial circular shape to zeta + theta [:], sin and cosine [:], all coils [:], and 1st fourier [1]
 		theta = np.linspace(0, 2*np.pi, NC_s_theta + 1)[0:-1]
 		zeta = np.linspace(0, 2*np.pi, NC_s_zeta + 1)[0:-1]
 		zeta, theta = np.meshgrid(zeta,theta)
 		result = index_update(result,index[0,1,:,0], zeta.reshape(-1))
 		result = index_update(result,index[1,1,:,0], theta.reshape(-1))
-		result = index_update(result,index[:,:,:,1], self.rc_s)
+		result = index_update(result,index[0,0,:,1], self.rc_s)
+		result = index_update(result,index[1,1,:,1], self.rc_s)
 		return result
 
 
@@ -101,14 +107,16 @@ class SaddleCoilSet:
 		"""
 		NZ = r_surface.shape[0]
 		NT = r_surface.shape[1]
-		x_s = r_surface[:,0:-1,0]
-		y_s = r_surface[:,0:-1,1]
-		z_s = r_surface[:,0:-1,2]
+		x_s = r_surface[:,:,0]
+		y_s = r_surface[:,:,1]
+		z_s = r_surface[:,:,2]
 
+		# xyz x sin/cos(zeta) x sin/cos(theta) x fz x ft
 		result = np.zeros((3, 2, 2, self.WSNFZ + 1, self.WSNFT + 1))
 
-		theta = np.linspace(0,2*PI,NT+1)[0:NT]
 		zeta = np.linspace(0,2*PI,NZ+1)[0:NZ]
+		theta = np.linspace(0,2*PI,NT+1)[0:NT]
+		
 
 		# X^{cc}_{0,0} terms for x,y,z
 		result = index_update(result,index[:,1,1,0,0], np.mean(r_surface,axis=(0,1)))
@@ -200,14 +208,14 @@ class SaddleCoilSet:
 		return zeta, theta
 
 	def compute_r_s(self,f_s,f_ws):
-		theta_s, zeta_s = self.compute_angles(f_s)
-		r_s = self.map_angles_to_xyz(zeta_s, theta_s, f_ws, self.NC_s,self.NS_s)
+		self.zeta_s, self.theta_s = self.compute_angles(f_s)
+		r_s = self.map_angles_to_xyz(self.zeta_s, self.theta_s, f_ws, self.NC_s,self.NS_s)
 		return r_s
 
-	def map_angles_to_xyz(self,zeta_s, theta_s, f_ws, NC, NS):
-		xyz = np.zeros((NC, NS+1,3))
-		for m in range(self.WSNFZ+1):
-			for n in range(self.WSNFT+1):
+	def map_angles_to_xyz(self, zeta_s, theta_s, f_ws, NC, NS):
+		xyz = np.zeros((NC, NS + 1, 3))
+		for m in range(self.WSNFZ + 1):
+			for n in range(self.WSNFT + 1):
 				arg_m = m * zeta_s
 				arg_n = n * theta_s
 				sin_m = np.sin(arg_m)
@@ -221,7 +229,7 @@ class SaddleCoilSet:
 		return xyz
 
 	def compute_saddle_length(self,dl_s):
-		return np.sum(np.linalg.norm(dl_s,axis=-1))
+		return np.sum(np.linalg.norm(dl_s, axis=-1))
 
 	def get_saddle_length(self):
 		return self.saddle_length
@@ -252,6 +260,18 @@ class SaddleCoilSet:
 
 	def get_winding_surface_fourier(self):
 		return self.winding_surface_fourier
+
+	def get_r_ws(self):
+		return self.r_w_surface
+
+	def get_f_s(self):
+		return self.f_s
+
+	def get_zeta_s(self):
+		return self.zeta_s
+
+	def get_theta_s(self):
+		return self.theta_s
 
 
 
