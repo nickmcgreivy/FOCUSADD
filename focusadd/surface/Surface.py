@@ -1,6 +1,7 @@
 import numpy as np
 import math as m
-from .readAxis import readAxis
+from .readAxis import read_axis
+from .Axis import Axis
 
 PI = m.pi
 
@@ -27,7 +28,7 @@ class Surface:
 		s (float): The scale factor for the surface. In FOCUSADD this is usually set to 1.
 		"""
         self.filename = filename
-        self.axis = readAxis(self.filename, num_zeta)
+        self.axis = Axis(read_axis(self.filename), num_zeta)
         self.epsilon = self.axis.epsilon
         self.a = self.axis.a
         self.NR = self.axis.NR
@@ -105,7 +106,7 @@ class Surface:
 
         r = np.zeros((num_coils, num_segments + 1, 3))
         resAxis2 = 100  # how high resolution is the axis
-        axis2 = readAxis(self.filename, num_coils * resAxis2)
+        axis2 = Axis(read_axis(self.filename), num_coils * resAxis2)
         sa = coil_radius * axis2.a
         zetaCoils = axis2.get_zeta()[:-1:resAxis2]
         theta = np.linspace(0.0, 2.0 * PI, num_segments + 1)

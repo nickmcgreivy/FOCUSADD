@@ -1,6 +1,6 @@
 import argparse
 import time
-from surface.readAxis import readAxis
+from surface.readAxis import read_axis
 from surface.Surface import Surface
 from surface.Axis import Axis
 from coils.CoilSet import CoilSet
@@ -12,7 +12,7 @@ import csv
 from functools import partial
 import jax.experimental.optimizers as op
 from jax import value_and_grad, jit
-
+from surface.readAxis import read_axis
 
 # from jax.config import config
 # config.update("jax_enable_x64",True)
@@ -178,54 +178,62 @@ def create_args_dict(args):
     return args_dict
 
 
-def update(i, opt_state, get_params, opt_update, loss):
-    params = get_params(opt_state)
-    loss_val, gradient = value_and_grad(loss)(params)
-    return opt_update(i, gradient, opt_state), loss_val
-
-
-def main():
-    args = set_args()
-    args_dict = create_args_dict(args)
-    input_file = args.input_file
-    output_file = args.output_file
-
+def get_initial_params(filename, args):
     surface = Surface(
-        "./initFiles/axes/{}.txt".format(args.axis),
+        filename,
         args.num_zeta,
         args.num_theta,
         args.radius_surface,
     )
+    input_file = args.input_file
 
     if input_file is not None:
-        coilSet = CoilSet(surface, input_file="coils/saved/{}.hdf5".format(input_file))
+        coil_data, params = CoilSet.get_initial_data(surface, input_file="coils/saved/{}.hdf5".format(input_file))
     else:
-        coilSet = CoilSet(surface, args_dict=args_dict)
+        coil_data, params = CoilSet.get_initial_data(surface, args_dict=create_args_dict(args))
 
-    loss_func = partial(default_loss, surface, coilSet, args.weight_length)
+    return coil_data, params, surface
+
+
+def main():
+
+    @jit
+    def update(i, opt_state):
+        params = get_params(opt_state)
+        loss_val, gradient = value_and_grad(lambda params : default_loss(surface_data, coil_output_func, args.weight_length, params))(params)
+        return opt_update(i, gradient, opt_state), loss_val
+
+    args = set_args()
+    axis_file = "./initFiles/axes/{}.txt".format(args.axis)
+    output_file = args.output_file
+    write_file = "{}.hdf5".format(output_file)
+    coil_data, init_params, surface = get_initial_params(axis_file, args)
+
+    surface_data = (surface.get_r_central(), surface.get_nn(), surface.get_sg())
+    
+    coil_output_func = partial(CoilSet.get_outputs, coil_data)
 
     opt_init, opt_update, get_params = args_to_op(
         args.optimizer, args.learning_rate, args.momentum_mass
     )
-    opt_state = opt_init(coilSet.get_params())
+    opt_state = opt_init(init_params)
 
     loss_vals = []
     start = time.time()
 
-    for i in range(args.num_iter):
-        opt_state, loss_val = update(i, opt_state, get_params, opt_update, loss_func)
-        params = get_params(opt_state)
+    for i in range(args.num_iter):    
+        opt_state, loss_val = update(i, opt_state)
         loss_vals.append(loss_val)
         print(loss_val)
-
     end = time.time()
     print(end - start)
+
+
     with open("{}.txt".format(output_file), "w") as f:
         wr = csv.writer(f, quoting=csv.QUOTE_ALL)
         wr.writerow(loss_vals)
 
-    coilSet.set_params(params)
-    coilSet.write("{}.hdf5".format(output_file))
+    CoilSet.write(coil_data, get_params(opt_state), write_file)
 
 
 if __name__ == "__main__":

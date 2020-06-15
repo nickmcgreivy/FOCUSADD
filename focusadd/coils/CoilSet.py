@@ -17,7 +17,8 @@ class CoilSet:
 	rotation of the coils. 
 	"""
 
-    def __init__(self, surface, input_file=None, args_dict=None):
+
+    def get_initial_data(surface, input_file=None, args_dict=None):
         """
 		There are two methods of initializing the coil set. Both require a surface which the coils surround. 
 
@@ -30,43 +31,44 @@ class CoilSet:
         if input_file is not None:
             with tb.open_file(input_file, "r") as f:
                 (
-                    self.NC,
-                    self.NS,
-                    self.NF,
-                    self.NFR,
-                    self.ln,
-                    self.lb,
-                    self.NNR,
-                    self.NBR,
-                    self.rc,
-                    self.NR,
+                    NC,
+                    NS,
+                    NF,
+                    NFR,
+                    ln,
+                    lb,
+                    NNR,
+                    NBR,
+                    rc,
+                    NR,
                 ) = f.root.metadata[0]
-                self.fc = np.asarray(f.root.coilSeries[:, :, :])
-                self.fr = np.asarray(f.root.rotationSeries[:, :, :])
+                fc = np.asarray(f.root.coilSeries[:, :, :])
+                fr = np.asarray(f.root.rotationSeries[:, :, :])
         elif args_dict is not None:
             # INITIALIZE COILS TO DEFAULT VALUES
-            self.NC = args_dict["numCoils"]
-            self.NS = args_dict["numSegments"]
-            self.NF = args_dict["numFourierCoils"]
-            self.NFR = args_dict["numFourierRotate"]
-            self.ln = args_dict["lengthNormal"]
-            self.lb = args_dict["lengthBinormal"]
-            self.NNR = args_dict["numNormalRotate"]
-            self.NBR = args_dict["numBinormalRotate"]
-            self.rc = args_dict["radiusCoil"]
-            self.NR = args_dict["numRotate"]
+            NC = args_dict["numCoils"]
+            NS = args_dict["numSegments"]
+            NF = args_dict["numFourierCoils"]
+            NFR = args_dict["numFourierRotate"]
+            ln = args_dict["lengthNormal"]
+            lb = args_dict["lengthBinormal"]
+            NNR = args_dict["numNormalRotate"]
+            NBR = args_dict["numBinormalRotate"]
+            rc = args_dict["radiusCoil"]
+            NR = args_dict["numRotate"]
             r_central = surface.calc_r_coils(
-                self.NC, self.NS, self.rc
+                NC, NS, rc
             )  # Position of centroid
-            self.fc = self.compute_coil_fourierSeries(r_central)
-            self.fr = np.zeros((2, self.NC, self.NFR))
+            fc = CoilSet.compute_coil_fourierSeries(NC, NS, NF, r_central)
+            fr = np.zeros((2, NC, NFR))
         else:
             raise Exception("No file or args_dict passed to initialize coil set. ")
-        self.theta = np.linspace(0, 2 * PI, self.NS + 1)
-        self.I = np.ones(self.NC) / (self.NNR * self.NBR)
-        self.set_params((self.fc, self.fr))
 
-    def compute_coil_fourierSeries(self, r_central):
+        coil_data = NC, NS, NF, NFR, ln, lb, NNR, NBR, rc, NR
+        params = fc, fr
+        return coil_data, params
+
+    def compute_coil_fourierSeries(NC, NS, NF, r_central):
         """ 
 		Takes a  and gives the coefficients
 		of the coil fourier series in a single array 
@@ -80,38 +82,38 @@ class CoilSet:
         x = r_central[:, 0:-1, 0]  # NC x NS
         y = r_central[:, 0:-1, 1]
         z = r_central[:, 0:-1, 2]
-        xc = np.zeros((self.NC, self.NF))
-        yc = np.zeros((self.NC, self.NF))
-        zc = np.zeros((self.NC, self.NF))
-        xs = np.zeros((self.NC, self.NF))
-        ys = np.zeros((self.NC, self.NF))
-        zs = np.zeros((self.NC, self.NF))
-        xc = index_add(xc, index[:, 0], np.sum(x, axis=1) / self.NS)
-        yc = index_add(yc, index[:, 0], np.sum(y, axis=1) / self.NS)
-        zc = index_add(zc, index[:, 0], np.sum(z, axis=1) / self.NS)
-        theta = np.linspace(0, 2 * PI, self.NS + 1)[0 : self.NS]
-        for m in range(1, self.NF):
+        xc = np.zeros((NC, NF))
+        yc = np.zeros((NC, NF))
+        zc = np.zeros((NC, NF))
+        xs = np.zeros((NC, NF))
+        ys = np.zeros((NC, NF))
+        zs = np.zeros((NC, NF))
+        xc = index_add(xc, index[:, 0], np.sum(x, axis=1) / NS)
+        yc = index_add(yc, index[:, 0], np.sum(y, axis=1) / NS)
+        zc = index_add(zc, index[:, 0], np.sum(z, axis=1) / NS)
+        theta = np.linspace(0, 2 * PI, NS + 1)[0 : NS]
+        for m in range(1, NF):
             xc = index_add(
-                xc, index[:, m], 2.0 * np.sum(x * np.cos(m * theta), axis=1) / self.NS
+                xc, index[:, m], 2.0 * np.sum(x * np.cos(m * theta), axis=1) / NS
             )
             yc = index_add(
-                yc, index[:, m], 2.0 * np.sum(y * np.cos(m * theta), axis=1) / self.NS
+                yc, index[:, m], 2.0 * np.sum(y * np.cos(m * theta), axis=1) / NS
             )
             zc = index_add(
-                zc, index[:, m], 2.0 * np.sum(z * np.cos(m * theta), axis=1) / self.NS
+                zc, index[:, m], 2.0 * np.sum(z * np.cos(m * theta), axis=1) / NS
             )
             xs = index_add(
-                xs, index[:, m], 2.0 * np.sum(x * np.sin(m * theta), axis=1) / self.NS
+                xs, index[:, m], 2.0 * np.sum(x * np.sin(m * theta), axis=1) / NS
             )
             ys = index_add(
-                ys, index[:, m], 2.0 * np.sum(y * np.sin(m * theta), axis=1) / self.NS
+                ys, index[:, m], 2.0 * np.sum(y * np.sin(m * theta), axis=1) / NS
             )
             zs = index_add(
-                zs, index[:, m], 2.0 * np.sum(z * np.sin(m * theta), axis=1) / self.NS
+                zs, index[:, m], 2.0 * np.sum(z * np.sin(m * theta), axis=1) / NS
             )
         return np.asarray([xc, yc, zc, xs, ys, zs])  # 6 x NC x NF
 
-    def write(self, output_file):
+    def write(coil_data, params, output_file):
         """ Write coils in HDF5 output format.
 		Input:
 
@@ -119,6 +121,8 @@ class CoilSet:
 
 
 		"""
+        NC, NS, NF, NFR, ln, lb, NNR, NBR, rc, NR = coil_data
+        fc, fr = params
         with tb.open_file(output_file, "w") as f:
             metadata = numpy.dtype(
                 [
@@ -137,31 +141,26 @@ class CoilSet:
             arr = numpy.array(
                 [
                     (
-                        self.NC,
-                        self.NS,
-                        self.NF,
-                        self.NFR,
-                        self.ln,
-                        self.lb,
-                        self.NNR,
-                        self.NBR,
-                        self.rc,
-                        self.NR,
+                        NC,
+                        NS,
+                        NF,
+                        NFR,
+                        ln,
+                        lb,
+                        NNR,
+                        NBR,
+                        rc,
+                        NR,
                     )
                 ],
                 dtype=metadata,
             )
             f.create_table("/", "metadata", metadata)
             f.root.metadata.append(arr)
-            f.create_array("/", "coilSeries", numpy.asarray(self.fc))
-            f.create_array("/", "rotationSeries", numpy.asarray(self.fr))
+            f.create_array("/", "coilSeries", numpy.asarray(fc))
+            f.create_array("/", "rotationSeries", numpy.asarray(fr))
 
-    def get_params(self):
-        """ Returns a tuple of the coil parameters, fourier series and rotation series"""
-        return (self.fc, self.fr)
-
-    # @partial(jit, static_argnums=(0,))
-    def set_params(self, params):
+    def get_outputs(coil_data, params):
         """ 
 		Takes a tuple of coil parameters and sets the parameters. When the 
 		parameters are reset, we need to update the other variables like the coil position, frenet frame, etc. 
@@ -170,20 +169,25 @@ class CoilSet:
 		params (tuple of numpy arrays): Tuple of parameters, first array is 6 x NC x NF
 
 		"""
-        self.fc, self.fr = params
+        NC, NS, NF, NFR, ln, lb, NNR, NBR, rc, NR = coil_data
+        theta = np.linspace(0, 2 * PI, NS + 1)
+        fc, fr = params
+        I = np.ones(NC) / (NNR * NBR)
         # COMPUTE COIL VARIABLES
-        self.compute_r_central()
-        self.compute_x1y1z1()
-        self.compute_x2y2z2()
-        self.compute_x3y3z3()
-        self.compute_torsion()
-        self.compute_mean_torsion()
-        self.compute_dsdt()
-        self.compute_frenet()
-        self.compute_r()
-        self.compute_total_length()
+        r_central = CoilSet.compute_r_central(coil_data, fc, theta)
+        r1 = CoilSet.compute_x1y1z1(coil_data, fc, theta)
+        r2 = CoilSet.compute_x2y2z2(coil_data, fc, theta)
+        r3 = CoilSet.compute_x3y3z3(coil_data, fc, theta)
+        torsion = CoilSet.compute_torsion(r1, r2, r3)
+        mean_torsion = CoilSet.compute_mean_torsion(torsion)
+        dsdt = CoilSet.compute_dsdt(r1)
+        tangent, normal, binormal = CoilSet.compute_frenet(r1, r2, dsdt)
+        r, dl, r_middle = CoilSet.compute_r(coil_data, theta, fr, normal, binormal, r_central)
+        total_length = CoilSet.compute_total_length(dl, NNR, NBR)
+        return I, dl, r, r_middle, total_length
 
-    def unpack_fourier(self, fc):
+
+    def unpack_fourier(fc):
         """
 		Takes coil fourier series fc and unpacks it into 6 components
 		"""
@@ -195,14 +199,15 @@ class CoilSet:
         zs = fc[5]
         return xc, yc, zc, xs, ys, zs
 
-    def compute_r_central(self):
+    def compute_r_central(coil_data, fc, theta):
+        NC, NS, NF, _, _, _, _, _, _, _ = coil_data
         """ Computes the position of the winding pack centroid using the coil fourier series """
-        xc, yc, zc, xs, ys, zs = self.unpack_fourier(self.fc)
-        x = np.zeros((self.NC, self.NS + 1))
-        y = np.zeros((self.NC, self.NS + 1))
-        z = np.zeros((self.NC, self.NS + 1))
-        for m in range(self.NF):
-            arg = m * self.theta
+        xc, yc, zc, xs, ys, zs = CoilSet.unpack_fourier(fc)
+        x = np.zeros((NC, NS + 1))
+        y = np.zeros((NC, NS + 1))
+        z = np.zeros((NC, NS + 1))
+        for m in range(NF):
+            arg = m * theta
             carg = np.cos(arg)
             sarg = np.sin(arg)
             x += (
@@ -217,22 +222,19 @@ class CoilSet:
                 zc[:, np.newaxis, m] * carg[np.newaxis, :]
                 + zs[:, np.newaxis, m] * sarg[np.newaxis, :]
             )
-        self.r_central = np.concatenate(
+        return np.concatenate(
             (x[:, :, np.newaxis], y[:, :, np.newaxis], z[:, :, np.newaxis]), axis=2
         )
 
-    def get_r_central(self):
-        """ Returns the position of the winding pack centroid """
-        return self.r_central
-
-    def compute_x1y1z1(self):
+    def compute_x1y1z1(coil_data, fc, theta):
         """ Computes a first derivative of the centroid """
-        xc, yc, zc, xs, ys, zs = self.unpack_fourier(self.fc)
-        x1 = np.zeros((self.NC, self.NS + 1))
-        y1 = np.zeros((self.NC, self.NS + 1))
-        z1 = np.zeros((self.NC, self.NS + 1))
-        for m in range(self.NF):
-            arg = m * self.theta
+        NC, NS, NF, _, _, _, _, _, _, _ = coil_data
+        xc, yc, zc, xs, ys, zs = CoilSet.unpack_fourier(fc)
+        x1 = np.zeros((NC, NS + 1))
+        y1 = np.zeros((NC, NS + 1))
+        z1 = np.zeros((NC, NS + 1))
+        for m in range(NF):
+            arg = m * theta
             carg = np.cos(arg)
             sarg = np.sin(arg)
             x1 += (
@@ -247,19 +249,20 @@ class CoilSet:
                 -m * zc[:, np.newaxis, m] * sarg[np.newaxis, :]
                 + m * zs[:, np.newaxis, m] * carg[np.newaxis, :]
             )
-        self.r1 = np.concatenate(
+        return np.concatenate(
             (x1[:, :, np.newaxis], y1[:, :, np.newaxis], z1[:, :, np.newaxis]), axis=2
         )
 
-    def compute_x2y2z2(self):
+    def compute_x2y2z2(coil_data, fc, theta):
         """ Computes a second derivative of the centroid """
-        xc, yc, zc, xs, ys, zs = self.unpack_fourier(self.fc)
-        x2 = np.zeros((self.NC, self.NS + 1))
-        y2 = np.zeros((self.NC, self.NS + 1))
-        z2 = np.zeros((self.NC, self.NS + 1))
-        for m in range(self.NF):
+        NC, NS, NF, _, _, _, _, _, _, _ = coil_data
+        xc, yc, zc, xs, ys, zs = CoilSet.unpack_fourier(fc)
+        x2 = np.zeros((NC, NS + 1))
+        y2 = np.zeros((NC, NS + 1))
+        z2 = np.zeros((NC, NS + 1))
+        for m in range(NF):
             m2 = m ** 2
-            arg = m * self.theta
+            arg = m * theta
             carg = np.cos(arg)
             sarg = np.sin(arg)
             x2 += (
@@ -274,19 +277,20 @@ class CoilSet:
                 -m2 * zc[:, np.newaxis, m] * carg[np.newaxis, :]
                 - m2 * zs[:, np.newaxis, m] * sarg[np.newaxis, :]
             )
-        self.r2 = np.concatenate(
+        return np.concatenate(
             (x2[:, :, np.newaxis], y2[:, :, np.newaxis], z2[:, :, np.newaxis]), axis=2
         )
 
-    def compute_x3y3z3(self):
+    def compute_x3y3z3(coil_data, fc, theta):
         """ Computes a third derivative of the centroid """
-        xc, yc, zc, xs, ys, zs = self.unpack_fourier(self.fc)
-        x3 = np.zeros((self.NC, self.NS + 1))
-        y3 = np.zeros((self.NC, self.NS + 1))
-        z3 = np.zeros((self.NC, self.NS + 1))
-        for m in range(self.NF):
+        NC, NS, NF, _, _, _, _, _, _, _ = coil_data
+        xc, yc, zc, xs, ys, zs = CoilSet.unpack_fourier(fc)
+        x3 = np.zeros((NC, NS + 1))
+        y3 = np.zeros((NC, NS + 1))
+        z3 = np.zeros((NC, NS + 1))
+        for m in range(NF):
             m3 = m ** 3
-            arg = m * self.theta
+            arg = m * theta
             carg = np.cos(arg)
             sarg = np.sin(arg)
             x3 += (
@@ -301,55 +305,37 @@ class CoilSet:
                 m3 * zc[:, np.newaxis, m] * sarg[np.newaxis, :]
                 - m3 * zs[:, np.newaxis, m] * carg[np.newaxis, :]
             )
-        self.r3 = np.concatenate(
+        return np.concatenate(
             (x3[:, :, np.newaxis], y3[:, :, np.newaxis], z3[:, :, np.newaxis]), axis=2
         )
 
-    def compute_dsdt(self):
+    def compute_dsdt(r1):
         """ Computes |dr/dtheta| """
-        self.dsdt = np.linalg.norm(self.r1, axis=-1)
+        return np.linalg.norm(r1, axis=-1)
 
-    def get_dsdt(self):
-        """ Returns |dr/theta| """
-        return self.dsdt
 
-    def compute_total_length(self):
-        self.total_length = np.sum(np.linalg.norm(self.dl, axis=-1)) / (
-            self.NNR * self.NBR
+    def compute_total_length(dl, NNR, NBR):
+        return np.sum(np.linalg.norm(dl, axis=-1)) / (
+            NNR * NBR
         )
 
-    def get_total_length(self):
-        """ Returns a scalar which is the total length of the NC coils """
-        return self.total_length
-
-    def get_r1(self):
-        return self.r1
-
-    def get_r2(self):
-        return self.r2
-
-    def get_r3(self):
-        return self.r3
-
-    def compute_frenet(self):
+    def compute_frenet(r1, r2, dsdt):
         """ Computes T, N, and B """
-        self.compute_tangent()
-        self.compute_normal()
-        self.compute_binormal()
+        tangent = CoilSet.compute_tangent(r1, dsdt)
+        normal = CoilSet.compute_normal(r2, tangent)
+        binormal = CoilSet.compute_binormal(tangent, normal)
+        return tangent, normal, binormal
 
-    def compute_tangent(self):
+    def compute_tangent(r1, dsdt):
         """ 
 		Computes the tangent vector of the coils. Uses the equation 
 
 		T = dr/d_theta / |dr / d_theta|
 
 		"""
-        self.tangent = self.r1 / self.dsdt[:, :, np.newaxis]
+        return r1 / dsdt[:, :, np.newaxis]
 
-    def get_tangent(self):
-        return self.tangent
-
-    def compute_normal(self):
+    def compute_normal(r2, tangent):
         """ 
 		Computes the normal vector of the coils. Uses the equation
 
@@ -360,22 +346,19 @@ class CoilSet:
 		N = r_2 - T(T . r2) / |r_2 - T(T . r2)|
 
 		"""
-        x2 = self.r2[:, :, 0]
-        y2 = self.r2[:, :, 1]
-        z2 = self.r2[:, :, 2]
+        x2 = r2[:, :, 0]
+        y2 = r2[:, :, 1]
+        z2 = r2[:, :, 2]
         a1 = (
-            x2 * self.tangent[:, :, 0]
-            + y2 * self.tangent[:, :, 1]
-            + z2 * self.tangent[:, :, 2]
+            x2 * tangent[:, :, 0]
+            + y2 * tangent[:, :, 1]
+            + z2 * tangent[:, :, 2]
         )
-        N = self.r2 - self.tangent * a1[:, :, np.newaxis]
+        N = r2 - tangent * a1[:, :, np.newaxis]
         norm = np.linalg.norm(N, axis=2)
-        self.normal = N / norm[:, :, np.newaxis]
+        return N / norm[:, :, np.newaxis]
 
-    def get_normal(self):
-        return self.normal
-
-    def compute_binormal(self):
+    def compute_binormal(tangent, normal):
         """ 
 
 		Computes the binormal vector of the coils
@@ -383,28 +366,20 @@ class CoilSet:
 		B = T x N
 
 		"""
-        self.binormal = np.cross(self.tangent, self.normal)
+        return np.cross(tangent, normal)
 
-    def get_binormal(self):
-        return self.binormal
-
-    def compute_frame(self):
+    def compute_frame(coil_data, theta, fr, normal, binormal):
         """
 		Computes the vectors v1 and v2 for each coil. v1 and v2 are rotated relative to
 		the normal and binormal frame by an amount alpha. Alpha is parametrized by a Fourier series.
 		"""
-        alpha = np.zeros((self.NC, self.NS + 1))
-        alpha += self.theta * self.NR / 2
-        # torsion = self.get_torsion()
-        # mean_torsion = self.get_mean_torsion()
-        # d_theta = 2. * PI / self.NS
-        # torsion = torsion - mean_torsion[:,np.newaxis]
-        # torsionInt = (np.cumsum(torsion,axis=-1) - torsion) * d_theta
-        # alpha -= torsionInt
-        Ac = self.fr[0]
-        As = self.fr[1]
-        for m in range(self.NFR):
-            arg = self.theta * m
+        NC, NS, _, NFR, _, _, _, _, _, NR = coil_data
+        alpha = np.zeros((NC, NS + 1))
+        alpha += theta * NR / 2
+        Ac = fr[0]
+        As = fr[1]
+        for m in range(NFR):
+            arg = theta * m
             carg = np.cos(arg)
             sarg = np.sin(arg)
             alpha += (
@@ -413,59 +388,42 @@ class CoilSet:
             )
         calpha = np.cos(alpha)
         salpha = np.sin(alpha)
-        self.v1 = (
-            calpha[:, :, np.newaxis] * self.normal
-            - salpha[:, :, np.newaxis] * self.binormal
+        v1 = (
+            calpha[:, :, np.newaxis] * normal
+            - salpha[:, :, np.newaxis] * binormal
         )
-        self.v2 = (
-            salpha[:, :, np.newaxis] * self.normal
-            + calpha[:, :, np.newaxis] * self.binormal
+        v2 = (
+            salpha[:, :, np.newaxis] * normal
+            + calpha[:, :, np.newaxis] * binormal
         )
+        return v1, v2
 
-    def get_frame(self):
-        return self.v1, self.v2
-
-    def compute_r(self):
+    def compute_r(coil_data, theta, fr, normal, binormal, r_central):
         """
 		Computes the position of the multi-filament coils.
 
-		self.r is a NC x NS + 1 x NNR x NBR x 3 array which holds the coil endpoints
-		self.dl is a NC x NS x NNR x NBR x 3 array which computes the length of the NS segments
-		self.r_middle is a NC x NS x NNR x NBR x 3 array which computes the midpoint of each of the NS segments
+		r is a NC x NS + 1 x NNR x NBR x 3 array which holds the coil endpoints
+		dl is a NC x NS x NNR x NBR x 3 array which computes the length of the NS segments
+		r_middle is a NC x NS x NNR x NBR x 3 array which computes the midpoint of each of the NS segments
 
 		"""
-        self.compute_frame()
-        r = np.zeros((self.NC, self.NS + 1, self.NNR, self.NBR, 3))
-        r += self.r_central[:, :, np.newaxis, np.newaxis, :]
-        for n in range(self.NNR):
-            for b in range(self.NBR):
+        NC, NS, NF, NFR, ln, lb, NNR, NBR, _, _ = coil_data
+        v1, v2 = CoilSet.compute_frame(coil_data, theta, fr, normal, binormal)
+        r = np.zeros((NC, NS + 1, NNR, NBR, 3))
+        r += r_central[:, :, np.newaxis, np.newaxis, :]
+        for n in range(NNR):
+            for b in range(NBR):
                 r = index_add(
                     r,
                     index[:, :, n, b, :],
-                    (n - 0.5 * (self.NNR - 1)) * self.ln * self.v1
-                    + (b - 0.5 * (self.NBR - 1)) * self.lb * self.v2,
+                    (n - 0.5 * (NNR - 1)) * ln * v1
+                    + (b - 0.5 * (NBR - 1)) * lb * v2,
                 )
-        self.r = r
-        self.dl = self.r[:, 1:, :, :, :] - self.r[:, :-1, :, :, :]
-        self.r_middle = (self.r[:, 1:, :, :, :] + self.r[:, :-1, :, :, :]) / 2.0
+        dl = r[:, 1:, :, :, :] - r[:, :-1, :, :, :]
+        r_middle = (r[:, 1:, :, :, :] + r[:, :-1, :, :, :]) / 2.0
+        return r, dl, r_middle
 
-    def get_r(self):
-        return self.r
-
-    def get_dl(self):
-        return self.dl
-
-    def get_r_middle(self):
-        """ self.r_middle is a NC x NS x NNR x NBR x 3 array which computes the midpoint of each of the NS segments """
-        return self.r_middle
-
-    def get_I(self):
-        return self.I
-
-    def compute_torsion(self):
-        r1 = self.get_r1()  # NC x NS+1 x 3
-        r2 = self.get_r2()  # NC x NS+1 x 3
-        r3 = self.get_r3()  # NC x NS+1 x 3
+    def compute_torsion(r1, r2, r3):
         cross12 = np.cross(r1, r2)
         top = (
             cross12[:, :, 0] * r3[:, :, 0]
@@ -473,42 +431,38 @@ class CoilSet:
             + cross12[:, :, 2] * r3[:, :, 2]
         )
         bottom = np.linalg.norm(cross12, axis=-1) ** 2
-        self.torsion = top / bottom  # NC x NS+1
+        return top / bottom  # NC x NS+1
 
-    def get_torsion(self):
-        return self.torsion
+    def compute_mean_torsion(torsion):
+        return np.mean(torsion[:, :-1], axis=-1)
 
-    def compute_mean_torsion(self):
-        self.mean_torsion = np.mean(self.torsion[:, :-1], axis=-1)
-
-    def get_mean_torsion(self):
-        return self.mean_torsion
-
-    def writeXYZ(self, params, filename):
-        self.set_params(params)
+    def writeXYZ(coil_data, params, filename):
+        NC, NS, _, _, _, _, NNR, NBR, _, _ = coil_data
+        _, _, r, _, _ = CoilSet.get_outputs(coil_data, params)
         with open(filename, "w") as f:
             f.write("periods {}\n".format(0))
             f.write("begin filament\n")
             f.write("FOCUSADD Coils\n")
-            for i in range(self.NC):
-                for n in range(self.NNR):
-                    for b in range(self.NBR):
-                        for s in range(self.NS):
+            for i in range(NC):
+                for n in range(NNR):
+                    for b in range(NBR):
+                        for s in range(NS):
                             f.write(
                                 "{} {} {} {}\n".format(
-                                    self.r[i, s, n, b, 0],
-                                    self.r[i, s, n, b, 1],
-                                    self.r[i, s, n, b, 2],
-                                    self.I[i],
+                                    r[i, s, n, b, 0],
+                                    r[i, s, n, b, 1],
+                                    r[i, s, n, b, 2],
+                                    I[i],
                                 )
                             )
                         f.write(
                             "{} {} {} {} {} {}\n".format(
-                                self.r[i, self.NS, n, b, 0],
-                                self.r[i, self.NS, n, b, 1],
-                                self.r[i, self.NS, n, b, 2],
+                                r[i, NS, n, b, 0],
+                                r[i, NS, n, b, 1],
+                                r[i, NS, n, b, 2],
                                 0.0,
                                 "{}{}{}".format(i, n, b),
                                 "coil/filament1/filament2",
                             )
                         )
+
