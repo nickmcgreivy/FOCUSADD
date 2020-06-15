@@ -3,12 +3,15 @@ import math as m
 
 PI = m.pi
 
+
 class Axis:
 
-	""" Represents the stellarator magnetic axis. """
+    """ Represents the stellarator magnetic axis. """
 
-	def __init__(self, xc, xs, yc, ys, zc, zs, N_zeta, epsilon, minor_rad, N_rotate, zeta_off):
-		""" 
+    def __init__(
+        self, xc, xs, yc, ys, zc, zs, N_zeta, epsilon, minor_rad, N_rotate, zeta_off
+    ):
+        """ 
 		
 		Initializes axis from Fourier series, calculates real-space coordinates.
 
@@ -24,24 +27,23 @@ class Axis:
 		N_zeta (int): Number of axis gridpoints in the toroidal direction, actually is N_zeta+1
 
 		"""
-		self.xc = xc
-		self.xs = xs
-		self.yc = yc
-		self.ys = ys
-		self.zc = zc
-		self.zs = zs
-		self.NF = len(self.xc)
-		self.N_zeta = N_zeta
-		self.zeta = np.linspace(0, 2*PI, self.N_zeta+1)
-		self.epsilon = epsilon
-		self.a = minor_rad
-		self.NR = N_rotate
-		self.zeta_off = zeta_off
-		self.init_axis()
+        self.xc = xc
+        self.xs = xs
+        self.yc = yc
+        self.ys = ys
+        self.zc = zc
+        self.zs = zs
+        self.NF = len(self.xc)
+        self.N_zeta = N_zeta
+        self.zeta = np.linspace(0, 2 * PI, self.N_zeta + 1)
+        self.epsilon = epsilon
+        self.a = minor_rad
+        self.NR = N_rotate
+        self.zeta_off = zeta_off
+        self.init_axis()
 
-
-	def init_axis(self):
-		"""
+    def init_axis(self):
+        """
 		
 		Performs the calculations required to initialize the Axis. This includes
 		calculating the real-space values, the frenet frame, the length of the axis, 
@@ -49,58 +51,60 @@ class Axis:
 
 		"""
 
-		self.compute_xyz()
-		self.compute_x1y1z1()
-		self.compute_x2y2z2()
-		self.compute_x3y3z3()
-		self.compute_dsdz()
-		self.compute_frenet()
-		self.compute_torsion()
-		self.compute_mean_torsion()
-		self.compute_curvature()
-		self.compute_dBdz()
-		self.compute_dNdz()
-		self.calc_alpha()
-		self.calc_frame()
+        self.compute_xyz()
+        self.compute_x1y1z1()
+        self.compute_x2y2z2()
+        self.compute_x3y3z3()
+        self.compute_dsdz()
+        self.compute_frenet()
+        self.compute_torsion()
+        self.compute_mean_torsion()
+        self.compute_curvature()
+        self.compute_dBdz()
+        self.compute_dNdz()
+        self.calc_alpha()
+        self.calc_frame()
 
+    def compute_xyz(self):
+        """ From the Fourier harmonics of the axis, computes the real-space coordinates of the axis. """
+        x = np.zeros(self.N_zeta + 1)
+        y = np.zeros(self.N_zeta + 1)
+        z = np.zeros(self.N_zeta + 1)
+        for m in range(self.NF):
+            arg = m * self.zeta
+            x += self.xc[m] * np.cos(arg) + self.xs[m] * np.sin(arg)
+            y += self.yc[m] * np.cos(arg) + self.ys[m] * np.sin(arg)
+            z += self.zc[m] * np.cos(arg) + self.zs[m] * np.sin(arg)
+        self.x = x
+        self.y = y
+        self.z = z
 
-	def compute_xyz(self):
-		""" From the Fourier harmonics of the axis, computes the real-space coordinates of the axis. """
-		x = np.zeros(self.N_zeta+1)
-		y = np.zeros(self.N_zeta+1)
-		z = np.zeros(self.N_zeta+1)
-		for m in range(self.NF):
-			arg = m * self.zeta
-			x += self.xc[m] * np.cos(arg) + self.xs[m] * np.sin(arg)
-			y += self.yc[m] * np.cos(arg) + self.ys[m] * np.sin(arg)
-			z += self.zc[m] * np.cos(arg) + self.zs[m] * np.sin(arg)
-		self.x = x
-		self.y = y
-		self.z = z
+    def get_xyz(self):
+        """ Returns the real-space coordinates of the axis """
 
-	def get_xyz(self):
-		""" Returns the real-space coordinates of the axis """
+        return self.x, self.y, self.z
 
-		return self.x, self.y, self.z
+    def get_r(self):
+        """ Returns the real-space coordinates of the axis in a single vector """
+        return np.concatenate(
+            (self.x[:, np.newaxis], self.y[:, np.newaxis], self.z[:, np.newaxis]),
+            axis=1,
+        )
 
-	def get_r(self):
-		""" Returns the real-space coordinates of the axis in a single vector """
-		return np.concatenate((self.x[:,np.newaxis],self.y[:,np.newaxis],self.z[:,np.newaxis]),axis=1)
+    def get_r_from_zeta(self, zeta):
+        """ Computes the real-space position of the axis for a single zeta. """
+        x = 0.0
+        y = 0.0
+        z = 0.0
+        for m in range(self.NF):
+            arg = m * zeta
+            x += self.xc[m] * np.cos(arg) + self.xs[m] * np.sin(arg)
+            y += self.yc[m] * np.cos(arg) + self.ys[m] * np.sin(arg)
+            z += self.zc[m] * np.cos(arg) + self.zs[m] * np.sin(arg)
+        return x, y, z
 
-	def get_r_from_zeta(self,zeta):
-		""" Computes the real-space position of the axis for a single zeta. """
-		x = 0.
-		y = 0.
-		z = 0.
-		for m in range(self.NF):
-			arg = m * zeta
-			x += self.xc[m] * np.cos(arg) + self.xs[m] * np.sin(arg)
-			y += self.yc[m] * np.cos(arg) + self.ys[m] * np.sin(arg)
-			z += self.zc[m] * np.cos(arg) + self.zs[m] * np.sin(arg)
-		return x,y,z
-
-	def compute_frenet(self):
-		""" 
+    def compute_frenet(self):
+        """ 
 
 		Computes the tangent, normal, and binormal of the axis.
 
@@ -109,99 +113,114 @@ class Axis:
 
 
 		"""
-		self.compute_tangent()
-		self.compute_normal()
-		self.compute_binormal()
+        self.compute_tangent()
+        self.compute_normal()
+        self.compute_binormal()
 
-	def compute_x1y1z1(self):
-		""" Computes the first derivative of the real-space position with respect to zeta """
-		x1 = np.zeros(self.N_zeta+1)
-		y1 = np.zeros(self.N_zeta+1)
-		z1 = np.zeros(self.N_zeta+1)
-		for m in range(self.NF):
-			arg = m * self.zeta
-			x1 += -m * self.xc[m] * np.sin(arg) + m * self.xs[m] * np.cos(arg)
-			y1 += -m * self.yc[m] * np.sin(arg) + m * self.ys[m] * np.cos(arg)
-			z1 += -m * self.zc[m] * np.sin(arg) + m * self.zs[m] * np.cos(arg)
-		self.x1 = x1
-		self.y1 = y1 
-		self.z1 = z1
+    def compute_x1y1z1(self):
+        """ Computes the first derivative of the real-space position with respect to zeta """
+        x1 = np.zeros(self.N_zeta + 1)
+        y1 = np.zeros(self.N_zeta + 1)
+        z1 = np.zeros(self.N_zeta + 1)
+        for m in range(self.NF):
+            arg = m * self.zeta
+            x1 += -m * self.xc[m] * np.sin(arg) + m * self.xs[m] * np.cos(arg)
+            y1 += -m * self.yc[m] * np.sin(arg) + m * self.ys[m] * np.cos(arg)
+            z1 += -m * self.zc[m] * np.sin(arg) + m * self.zs[m] * np.cos(arg)
+        self.x1 = x1
+        self.y1 = y1
+        self.z1 = z1
 
-	def get_r1(self):
-		""" Returns the first derivative of the real-space position in a single N_zeta+1 by 3 vector """
-		return np.concatenate((self.x1[:,np.newaxis],self.y1[:,np.newaxis],self.z1[:,np.newaxis]),axis=1)
+    def get_r1(self):
+        """ Returns the first derivative of the real-space position in a single N_zeta+1 by 3 vector """
+        return np.concatenate(
+            (self.x1[:, np.newaxis], self.y1[:, np.newaxis], self.z1[:, np.newaxis]),
+            axis=1,
+        )
 
-	def compute_x2y2z2(self):
-		""" Computes the second derivative of the real-space position with respect to zeta """
-		x2 = np.zeros(self.N_zeta+1)
-		y2 = np.zeros(self.N_zeta+1)
-		z2 = np.zeros(self.N_zeta+1)
-		for m in range(self.NF):
-			arg = m * self.zeta
-			x2 += -m**2 * self.xc[m] * np.cos(arg) - m**2 * self.xs[m] * np.sin(arg)
-			y2 += -m**2 * self.yc[m] * np.cos(arg) - m**2 * self.ys[m] * np.sin(arg)
-			z2 += -m**2 * self.zc[m] * np.cos(arg) - m**2 * self.zs[m] * np.sin(arg)
-		self.x2 = x2
-		self.y2 = y2 
-		self.z2 = z2
+    def compute_x2y2z2(self):
+        """ Computes the second derivative of the real-space position with respect to zeta """
+        x2 = np.zeros(self.N_zeta + 1)
+        y2 = np.zeros(self.N_zeta + 1)
+        z2 = np.zeros(self.N_zeta + 1)
+        for m in range(self.NF):
+            arg = m * self.zeta
+            x2 += -(m ** 2) * self.xc[m] * np.cos(arg) - m ** 2 * self.xs[m] * np.sin(
+                arg
+            )
+            y2 += -(m ** 2) * self.yc[m] * np.cos(arg) - m ** 2 * self.ys[m] * np.sin(
+                arg
+            )
+            z2 += -(m ** 2) * self.zc[m] * np.cos(arg) - m ** 2 * self.zs[m] * np.sin(
+                arg
+            )
+        self.x2 = x2
+        self.y2 = y2
+        self.z2 = z2
 
-	def get_r2(self):
-		""" Returns the second derivative of the real-space position in a single N_zeta+1 by 3 vector """
-		return np.concatenate((self.x2[:,np.newaxis],self.y2[:,np.newaxis],self.z2[:,np.newaxis]),axis=1)
+    def get_r2(self):
+        """ Returns the second derivative of the real-space position in a single N_zeta+1 by 3 vector """
+        return np.concatenate(
+            (self.x2[:, np.newaxis], self.y2[:, np.newaxis], self.z2[:, np.newaxis]),
+            axis=1,
+        )
 
-	def compute_x3y3z3(self):
-		""" Computes the third derivative of the real-space position with respect to zeta """
-		x3 = np.zeros(self.N_zeta+1)
-		y3 = np.zeros(self.N_zeta+1)
-		z3 = np.zeros(self.N_zeta+1)
-		for m in range(self.NF):
-			arg = m * self.zeta
-			x3 += m**3 * self.xc[m] * np.sin(arg) - m**3 * self.xs[m] * np.cos(arg)
-			y3 += m**3 * self.yc[m] * np.sin(arg) - m**3 * self.ys[m] * np.cos(arg)
-			z3 += m**3 * self.zc[m] * np.sin(arg) - m**3 * self.zs[m] * np.cos(arg)
-		self.x3 = x3
-		self.y3 = y3 
-		self.z3 = z3
+    def compute_x3y3z3(self):
+        """ Computes the third derivative of the real-space position with respect to zeta """
+        x3 = np.zeros(self.N_zeta + 1)
+        y3 = np.zeros(self.N_zeta + 1)
+        z3 = np.zeros(self.N_zeta + 1)
+        for m in range(self.NF):
+            arg = m * self.zeta
+            x3 += m ** 3 * self.xc[m] * np.sin(arg) - m ** 3 * self.xs[m] * np.cos(arg)
+            y3 += m ** 3 * self.yc[m] * np.sin(arg) - m ** 3 * self.ys[m] * np.cos(arg)
+            z3 += m ** 3 * self.zc[m] * np.sin(arg) - m ** 3 * self.zs[m] * np.cos(arg)
+        self.x3 = x3
+        self.y3 = y3
+        self.z3 = z3
 
-	def get_r3(self):
-		""" Returns the third derivative of the real-space position in a single N_zeta+1 by 3 vector """
-		return np.concatenate((self.x3[:,np.newaxis],self.y3[:,np.newaxis],self.z3[:,np.newaxis]),axis=1)
+    def get_r3(self):
+        """ Returns the third derivative of the real-space position in a single N_zeta+1 by 3 vector """
+        return np.concatenate(
+            (self.x3[:, np.newaxis], self.y3[:, np.newaxis], self.z3[:, np.newaxis]),
+            axis=1,
+        )
 
-	def get_zeta(self):
-		""" 
+    def get_zeta(self):
+        """ 
 		zeta is a length N_zeta+1 vector which is equally spaced between 0 and 2pi.
 		The first and last elements represent the same position on the axis.
 		"""
-		return self.zeta
+        return self.zeta
 
-	def compute_dsdz(self):
-		"""
+    def compute_dsdz(self):
+        """
 		Computes |dr/d_zeta|
 		"""
-		self.dsdz = np.linalg.norm(self.get_r1(),axis=1)
+        self.dsdz = np.linalg.norm(self.get_r1(), axis=1)
 
-	def get_dsdz(self):
-		"""
+    def get_dsdz(self):
+        """
 		Returns |dr/d_zeta|
 		"""
-		return self.dsdz
+        return self.dsdz
 
-	def compute_tangent(self):
-		""" 
+    def compute_tangent(self):
+        """ 
 		Computes the tangent vector of the axis. Uses the equation 
 
 		T = dr/d_zeta / |dr / d_zeta|
 
 		"""
-		a0 = self.get_dsdz()
-		self.tangent = self.get_r1() / a0[:,np.newaxis]
+        a0 = self.get_dsdz()
+        self.tangent = self.get_r1() / a0[:, np.newaxis]
 
-	def get_tangent(self):
-		""" Returns the tangent vector of the axis """
-		return self.tangent
+    def get_tangent(self):
+        """ Returns the tangent vector of the axis """
+        return self.tangent
 
-	def compute_normal(self):
-		""" 
+    def compute_normal(self):
+        """ 
 		Computes the normal vector of the axis. Uses the equation
 
 		N = dT/ds / |dT/ds| 
@@ -211,64 +230,72 @@ class Axis:
 		N = r_2 - T(T . r2) / |r_2 - T(T . r2)|
 
 		"""
-		a1 = self.x2 * self.tangent[:,0] + self.y2 * self.tangent[:,1] + self.z2 * self.tangent[:,2]
-		N = self.get_r2() - self.tangent * a1[:,np.newaxis]
-		norm = np.linalg.norm(N,axis=1)
-		self.normal = N / norm[:,np.newaxis]
+        a1 = (
+            self.x2 * self.tangent[:, 0]
+            + self.y2 * self.tangent[:, 1]
+            + self.z2 * self.tangent[:, 2]
+        )
+        N = self.get_r2() - self.tangent * a1[:, np.newaxis]
+        norm = np.linalg.norm(N, axis=1)
+        self.normal = N / norm[:, np.newaxis]
 
-	def get_normal(self):
-		""" Returns the normal vector of the axis """
-		return self.normal
+    def get_normal(self):
+        """ Returns the normal vector of the axis """
+        return self.normal
 
-	def compute_binormal(self):
-		""" 
+    def compute_binormal(self):
+        """ 
 
 		Computes the binormal vector of the axis
 
 		B = T x N
 
 		"""
-		self.binormal = np.cross(self.tangent, self.normal)
+        self.binormal = np.cross(self.tangent, self.normal)
 
-	def get_binormal(self):
-		""" Returns the binormal vector of the axis """
-		return self.binormal
+    def get_binormal(self):
+        """ Returns the binormal vector of the axis """
+        return self.binormal
 
-	def compute_torsion(self):
-		"""
+    def compute_torsion(self):
+        """
 		Computes the torsion of the axis using the formula
 		
 		tau = ( r1 x r2 ) . r3 / |r1 x r2|**2
 
 		"""
-		r1 = self.get_r1()
-		r2 = self.get_r2()
-		r3 = self.get_r3()
-		cross12 = np.cross(r1, r2)
-		top = cross12[:,0] * r3[:,0] + cross12[:,1] * r3[:,1] + cross12[:,2] * r3[:,2]
-		bottom = np.linalg.norm(cross12,axis=1)**2
-		self.torsion = top / bottom
+        r1 = self.get_r1()
+        r2 = self.get_r2()
+        r3 = self.get_r3()
+        cross12 = np.cross(r1, r2)
+        top = (
+            cross12[:, 0] * r3[:, 0]
+            + cross12[:, 1] * r3[:, 1]
+            + cross12[:, 2] * r3[:, 2]
+        )
+        bottom = np.linalg.norm(cross12, axis=1) ** 2
+        self.torsion = top / bottom
 
-	def get_torsion(self):
-		""" Returns the torsion of the axis as a function of zeta """
+    def get_torsion(self):
+        """ Returns the torsion of the axis as a function of zeta """
 
-		return self.torsion
+        return self.torsion
 
-	def compute_mean_torsion(self):
-		""" 
+    def compute_mean_torsion(self):
+        """ 
 		Computes the mean torsion value of the axis.
 
 		Because the axis is periodic, the last element is not used in computing the torsion.
 
 		"""
-		self.mean_torsion = np.mean(self.torsion[:-1])
+        self.mean_torsion = np.mean(self.torsion[:-1])
 
-	def get_mean_torsion(self):
-		""" Returns the mean torsion of the axis """
-		return self.mean_torsion
+    def get_mean_torsion(self):
+        """ Returns the mean torsion of the axis """
+        return self.mean_torsion
 
-	def compute_curvature(self):
-		""" 
+    def compute_curvature(self):
+        """ 
 
 		Computes the curvature of the axis. Uses the formula
 
@@ -276,18 +303,18 @@ class Axis:
 
 		"""
 
-		r1 = self.get_r1()
-		r2 = self.get_r2()
-		cross12 = np.cross(r1, r2)
-		top = np.linalg.norm(cross12, axis=1)
-		bottom = np.linalg.norm(r1,axis=1)**3
-		self.curvature = top / bottom
+        r1 = self.get_r1()
+        r2 = self.get_r2()
+        cross12 = np.cross(r1, r2)
+        top = np.linalg.norm(cross12, axis=1)
+        bottom = np.linalg.norm(r1, axis=1) ** 3
+        self.curvature = top / bottom
 
-	def get_curvature(self):
-		return self.curvature
+    def get_curvature(self):
+        return self.curvature
 
-	def compute_dNdz(self):
-		"""
+    def compute_dNdz(self):
+        """
 		
 		Computes the derivative dN/dzeta using the Frenet-Serret equations.
 
@@ -297,13 +324,16 @@ class Axis:
 
 		"""
 
-		self.dNdz = (- self.curvature[:,np.newaxis] * self.tangent + self.torsion[:,np.newaxis] * self.binormal ) * self.dsdz[:,np.newaxis]
+        self.dNdz = (
+            -self.curvature[:, np.newaxis] * self.tangent
+            + self.torsion[:, np.newaxis] * self.binormal
+        ) * self.dsdz[:, np.newaxis]
 
-	def get_dNdz(self):
-		return self.dNdz
+    def get_dNdz(self):
+        return self.dNdz
 
-	def compute_dBdz(self):
-		"""
+    def compute_dBdz(self):
+        """
 		
 		Computes the derivative dB/dzeta using the Frenet-Serret equations.
 
@@ -312,14 +342,15 @@ class Axis:
 		dB/dz = - tau * N * ds/dz
 
 		"""
-		self.dBdz = - self.torsion[:,np.newaxis] * self.normal * self.dsdz[:,np.newaxis]
+        self.dBdz = (
+            -self.torsion[:, np.newaxis] * self.normal * self.dsdz[:, np.newaxis]
+        )
 
-	def get_dBdz(self):
-		return self.dBdz
+    def get_dBdz(self):
+        return self.dBdz
 
-
-	def calc_alpha(self):
-		"""
+    def calc_alpha(self):
+        """
 		Alpha is the angle by which we rotate the Normal and Binormal vectors of 
 		the axis to get the orientation of the elliptical surface we are using. We will
 		ultimately rotate N and B by a rotation matrix with angle alpha.
@@ -337,35 +368,33 @@ class Axis:
 
 		The factor of 2 in N_rotate is due to elliptical symmetry in the surface cross-section.
 		"""
-		tau = self.get_torsion() 
-		av_tau = self.get_mean_torsion()
-		d_zeta = 2. * PI / self.N_zeta
-		tau = tau - av_tau # subtracts off <tau>
-		torsionInt = (np.cumsum(tau) - tau) * d_zeta # if i didn't subtract off tau this would be from 
-		zeta = self.get_zeta()
-		self.alpha = 0.5 * self.NR * zeta + self.zeta_off + torsionInt
+        tau = self.get_torsion()
+        av_tau = self.get_mean_torsion()
+        d_zeta = 2.0 * PI / self.N_zeta
+        tau = tau - av_tau  # subtracts off <tau>
+        torsionInt = (
+            np.cumsum(tau) - tau
+        ) * d_zeta  # if i didn't subtract off tau this would be from
+        zeta = self.get_zeta()
+        self.alpha = 0.5 * self.NR * zeta + self.zeta_off + torsionInt
 
-	def get_alpha(self):
-		""" Returns the angle alpha by which the ellipse frame is rotated relative to the normal and binormal """
-		return self.alpha
+    def get_alpha(self):
+        """ Returns the angle alpha by which the ellipse frame is rotated relative to the normal and binormal """
+        return self.alpha
 
-	def calc_frame(self):
-		""" 
+    def calc_frame(self):
+        """ 
 		Calculates the vectors v1 and v2 which are the ellipse frame. The normal and 
 		binormal get rotated by alpha. 
 		"""
-		alpha = self.get_alpha()
-		calpha = np.cos(alpha)
-		salpha = np.sin(alpha)
-		N = self.get_normal()
-		B = self.get_binormal()
-		self.v1 = calpha[:,np.newaxis] * N - salpha[:,np.newaxis] * B
-		self.v2 = salpha[:,np.newaxis] * N + calpha[:,np.newaxis] * B
+        alpha = self.get_alpha()
+        calpha = np.cos(alpha)
+        salpha = np.sin(alpha)
+        N = self.get_normal()
+        B = self.get_binormal()
+        self.v1 = calpha[:, np.newaxis] * N - salpha[:, np.newaxis] * B
+        self.v2 = salpha[:, np.newaxis] * N + calpha[:, np.newaxis] * B
 
-	def get_frame(self):
-		""" Returns the vectors v1 and v2 which give the ellipse frame for a given zeta. """
-		return self.v1, self.v2
-
-
-
-
+    def get_frame(self):
+        """ Returns the vectors v1 and v2 which give the ellipse frame for a given zeta. """
+        return self.v1, self.v2

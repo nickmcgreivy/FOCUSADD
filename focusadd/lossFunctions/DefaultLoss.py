@@ -1,20 +1,21 @@
-#from lossFunctions.LossFunction import LossFunction
+# from lossFunctions.LossFunction import LossFunction
 from .LossFunction import LossFunction
 import jax.numpy as np
 import math
 from functools import partial
 from jax import jit
 
-PI = math.pi 
+PI = math.pi
+
+
 class DefaultLoss(LossFunction):
+    def __init__(self, surface, coil_set, weight_length=0.1):
+        super().__init__(surface, coil_set)
+        self.weight_length = weight_length
 
-	def __init__(self,surface,coil_set,weight_length=0.1):
-		super().__init__(surface,coil_set)
-		self.weight_length = weight_length
-
-	#@partial(jit, static_argnums=(0,))
-	def loss(self,params):
-		""" 
+    # @partial(jit, static_argnums=(0,))
+    def loss(self, params):
+        """ 
 		Computes the default loss: int (B dot n)^2 dA + weight_length * len(coils) 
 
 		Input: params, a tuple of the fourier series for the coils and a fourier series for the rotation.
@@ -23,12 +24,18 @@ class DefaultLoss(LossFunction):
 		this in an optimizer.
 		"""
 
-		# NEED TO SET_PARAMS 
-		self.coil_set.set_params(params) 
-		B_loss_val = np.sum(LossFunction.bnsquared(self.surface.get_r_central(),\
-			self.coil_set.get_I(),self.coil_set.get_dl(),self.coil_set.get_r_middle(),\
-			self.surface.get_nn(), self.surface.get_sg()))
+        # NEED TO SET_PARAMS
+        self.coil_set.set_params(params)
+        B_loss_val = np.sum(
+            LossFunction.bnsquared(
+                self.surface.get_r_central(),
+                self.coil_set.get_I(),
+                self.coil_set.get_dl(),
+                self.coil_set.get_r_middle(),
+                self.surface.get_nn(),
+                self.surface.get_sg(),
+            )
+        )
 
-		len_loss_val = self.coil_set.get_total_length()
-		return B_loss_val + self.weight_length * len_loss_val
-
+        len_loss_val = self.coil_set.get_total_length()
+        return B_loss_val + self.weight_length * len_loss_val
