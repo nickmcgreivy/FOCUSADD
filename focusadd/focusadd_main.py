@@ -188,27 +188,30 @@ def get_initial_params(filename, args):
     input_file = args.input_file
 
     if input_file is not None:
-        coilset = CoilSet(surface, input_file="coils/saved/{}.hdf5".format(input_file))
+        coil_data, params = CoilSet.get_initial_data(surface, input_file="coils/saved/{}.hdf5".format(input_file))
     else:
-        coilset = CoilSet(surface, args_dict=create_args_dict(args))
+        coil_data, params = CoilSet.get_initial_data(surface, args_dict=create_args_dict(args))
 
-    init_params = coilset.get_params()
-    return init_params, surface, coilset
-
-
-def update(i, opt_state, get_params, opt_update, loss):
-    params = get_params(opt_state)
-    loss_val, gradient = value_and_grad(loss)(params)
-    return opt_update(i, gradient, opt_state), loss_val
+    return coil_data, params, surface
 
 
 def main():
+
+    @jit
+    def update(i, opt_state):
+        params = get_params(opt_state)
+        loss_val, gradient = value_and_grad(lambda params : default_loss(surface_data, coil_output_func, args.weight_length, params))(params)
+        return opt_update(i, gradient, opt_state), loss_val
+
     args = set_args()
     axis_file = "./initFiles/axes/{}.txt".format(args.axis)
-    init_params, surface, coilset = get_initial_params(axis_file, args)
+    output_file = args.output_file
+    write_file = "{}.hdf5".format(output_file)
+    coil_data, init_params, surface = get_initial_params(axis_file, args)
 
     surface_data = (surface.get_r_central(), surface.get_nn(), surface.get_sg())
-    loss_func = partial(default_loss, surface_data, coilset, args.weight_length)
+    
+    coil_output_func = partial(CoilSet.get_outputs, coil_data)
 
     opt_init, opt_update, get_params = args_to_op(
         args.optimizer, args.learning_rate, args.momentum_mass
@@ -218,22 +221,19 @@ def main():
     loss_vals = []
     start = time.time()
 
-    for i in range(args.num_iter):
-        opt_state, loss_val = update(i, opt_state, get_params, opt_update, loss_func)
-        params = get_params(opt_state)
+    for i in range(args.num_iter):    
+        opt_state, loss_val = update(i, opt_state)
         loss_vals.append(loss_val)
         print(loss_val)
     end = time.time()
     print(end - start)
 
-    output_file = args.output_file
+
     with open("{}.txt".format(output_file), "w") as f:
         wr = csv.writer(f, quoting=csv.QUOTE_ALL)
         wr.writerow(loss_vals)
 
-    coilset.set_params(params)
-
-    coilset.write("{}.hdf5".format(output_file))
+    CoilSet.write(coil_data, get_params(opt_state), write_file)
 
 
 if __name__ == "__main__":
