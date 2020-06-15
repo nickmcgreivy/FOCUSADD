@@ -17,6 +17,8 @@ class CoilSet:
 	rotation of the coils. 
 	"""
 
+    
+
     def __init__(self, surface, input_file=None, args_dict=None):
         """
 		There are two methods of initializing the coil set. Both require a surface which the coils surround. 

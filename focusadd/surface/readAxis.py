@@ -2,7 +2,7 @@ import jax.numpy as np
 from .Axis import Axis
 
 
-def readAxis(filename, N_zeta):
+def read_axis(filename):
     """
 	Reads the magnetic axis from a file.
 
@@ -44,12 +44,12 @@ def readAxis(filename, N_zeta):
         file.readline()
         epsilon, minor_rad, N_rotate, zeta_off = map(float, file.readline().split(" "))
 
-    return Axis(xc, xs, yc, ys, zc, zs, N_zeta, epsilon, minor_rad, N_rotate, zeta_off)
+    return xc, xs, yc, ys, zc, zs, epsilon, minor_rad, N_rotate, zeta_off
 
 
 def main():
     filename = "../initFiles/axes/defaultAxis.txt"
-    readAxis(filename, 64)
+    read_axis(filename, 64)
 
 
 if __name__ == "__main__":

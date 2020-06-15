@@ -9,7 +9,7 @@ class Axis:
     """ Represents the stellarator magnetic axis. """
 
     def __init__(
-        self, xc, xs, yc, ys, zc, zs, N_zeta, epsilon, minor_rad, N_rotate, zeta_off
+        self, read_axis_data, N_zeta
     ):
         """ 
 		
@@ -27,6 +27,7 @@ class Axis:
 		N_zeta (int): Number of axis gridpoints in the toroidal direction, actually is N_zeta+1
 
 		"""
+        xc, xs, yc, ys, zc, zs, epsilon, minor_rad, N_rotate, zeta_off = read_axis_data
         self.xc = xc
         self.xs = xs
         self.yc = yc

@@ -8,7 +8,7 @@ PI = math.pi
 
 
 # @partial(jit, static_argnums=(0,))
-def default_loss(surface, coil_set, weight_length, params):
+def default_loss(surface_data, coil_set, weight_length, params):
     """ 
 	Computes the default loss: int (B dot n)^2 dA + weight_length * len(coils) 
 
@@ -18,16 +18,18 @@ def default_loss(surface, coil_set, weight_length, params):
 	this in an optimizer.
 	"""
 
+    r_central, nn, sg = surface_data
+
     # NEED TO SET_PARAMS
     coil_set.set_params(params)
     B_loss_val = np.sum(
         LossFunction.bnsquared(
-            surface.get_r_central(),
+            r_central,
             coil_set.get_I(),
             coil_set.get_dl(),
             coil_set.get_r_middle(),
-            surface.get_nn(),
-            surface.get_sg(),
+            nn,
+            sg,
         )
     )
 
