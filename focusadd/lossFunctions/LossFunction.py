@@ -7,9 +7,6 @@ PI = math.pi
 
 
 class LossFunction:
-    def __init__(self, surface, coil_set):
-        self.surface = surface
-        self.coil_set = coil_set
 
     @jit
     def bnsquared(r, I, dl, l, nn, sg):
