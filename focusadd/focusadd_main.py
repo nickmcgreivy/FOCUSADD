@@ -6,12 +6,13 @@ from surface.Axis import Axis
 from coils.CoilSet import CoilSet
 import jax.numpy as np
 import numpy as numpy
-from lossFunctions.DefaultLoss import DefaultLoss
+from lossFunctions.DefaultLoss import default_loss
 import math
 import csv
 from functools import partial
 import jax.experimental.optimizers as op
-from jax import value_and_grad
+from jax import value_and_grad, jit
+
 
 # from jax.config import config
 # config.update("jax_enable_x64",True)
@@ -201,7 +202,7 @@ def main():
     else:
         coilSet = CoilSet(surface, args_dict=args_dict)
 
-    l = DefaultLoss(surface, coilSet, weight_length=args.weight_length)
+    loss_func = partial(default_loss, surface, coilSet, args.weight_length)
 
     opt_init, opt_update, get_params = args_to_op(
         args.optimizer, args.learning_rate, args.momentum_mass
@@ -212,7 +213,7 @@ def main():
     start = time.time()
 
     for i in range(args.num_iter):
-        opt_state, loss_val = update(i, opt_state, get_params, opt_update, l.loss)
+        opt_state, loss_val = update(i, opt_state, get_params, opt_update, loss_func)
         params = get_params(opt_state)
         loss_vals.append(loss_val)
         print(loss_val)
