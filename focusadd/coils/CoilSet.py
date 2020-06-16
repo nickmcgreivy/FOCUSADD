@@ -170,7 +170,7 @@ class CoilSet:
 
 		"""
         NC, NS, NF, NFR, ln, lb, NNR, NBR, rc, NR = coil_data
-        theta = np.linspace(0, 2 * PI, NS + 1)
+        theta = np.linspace(0, 2 * PI, 2 * NS + 1)
         fc, fr = params
         I = np.ones(NC) / (NNR * NBR)
         # COMPUTE COIL VARIABLES
@@ -203,9 +203,9 @@ class CoilSet:
         NC, NS, NF, _, _, _, _, _, _, _ = coil_data
         """ Computes the position of the winding pack centroid using the coil fourier series """
         xc, yc, zc, xs, ys, zs = CoilSet.unpack_fourier(fc)
-        x = np.zeros((NC, NS + 1))
-        y = np.zeros((NC, NS + 1))
-        z = np.zeros((NC, NS + 1))
+        x = np.zeros((NC, 2 * NS + 1))
+        y = np.zeros((NC, 2 * NS + 1))
+        z = np.zeros((NC, 2 * NS + 1))
         for m in range(NF):
             arg = m * theta
             carg = np.cos(arg)
@@ -230,9 +230,9 @@ class CoilSet:
         """ Computes a first derivative of the centroid """
         NC, NS, NF, _, _, _, _, _, _, _ = coil_data
         xc, yc, zc, xs, ys, zs = CoilSet.unpack_fourier(fc)
-        x1 = np.zeros((NC, NS + 1))
-        y1 = np.zeros((NC, NS + 1))
-        z1 = np.zeros((NC, NS + 1))
+        x1 = np.zeros((NC, 2 * NS + 1))
+        y1 = np.zeros((NC, 2 * NS + 1))
+        z1 = np.zeros((NC, 2 * NS + 1))
         for m in range(NF):
             arg = m * theta
             carg = np.cos(arg)
@@ -257,9 +257,9 @@ class CoilSet:
         """ Computes a second derivative of the centroid """
         NC, NS, NF, _, _, _, _, _, _, _ = coil_data
         xc, yc, zc, xs, ys, zs = CoilSet.unpack_fourier(fc)
-        x2 = np.zeros((NC, NS + 1))
-        y2 = np.zeros((NC, NS + 1))
-        z2 = np.zeros((NC, NS + 1))
+        x2 = np.zeros((NC, 2 * NS + 1))
+        y2 = np.zeros((NC, 2 * NS + 1))
+        z2 = np.zeros((NC, 2 * NS + 1))
         for m in range(NF):
             m2 = m ** 2
             arg = m * theta
@@ -285,9 +285,9 @@ class CoilSet:
         """ Computes a third derivative of the centroid """
         NC, NS, NF, _, _, _, _, _, _, _ = coil_data
         xc, yc, zc, xs, ys, zs = CoilSet.unpack_fourier(fc)
-        x3 = np.zeros((NC, NS + 1))
-        y3 = np.zeros((NC, NS + 1))
-        z3 = np.zeros((NC, NS + 1))
+        x3 = np.zeros((NC, 2 * NS + 1))
+        y3 = np.zeros((NC, 2 * NS + 1))
+        z3 = np.zeros((NC, 2 * NS + 1))
         for m in range(NF):
             m3 = m ** 3
             arg = m * theta
@@ -374,7 +374,7 @@ class CoilSet:
 		the normal and binormal frame by an amount alpha. Alpha is parametrized by a Fourier series.
 		"""
         NC, NS, _, NFR, _, _, _, _, _, NR = coil_data
-        alpha = np.zeros((NC, NS + 1))
+        alpha = np.zeros((NC, 2 * NS + 1))
         alpha += theta * NR / 2
         Ac = fr[0]
         As = fr[1]
@@ -409,7 +409,7 @@ class CoilSet:
 		"""
         NC, NS, NF, NFR, ln, lb, NNR, NBR, _, _ = coil_data
         v1, v2 = CoilSet.compute_frame(coil_data, theta, fr, normal, binormal)
-        r = np.zeros((NC, NS + 1, NNR, NBR, 3))
+        r = np.zeros((NC, 2 * NS + 1, NNR, NBR, 3))
         r += r_central[:, :, np.newaxis, np.newaxis, :]
         for n in range(NNR):
             for b in range(NBR):
@@ -419,8 +419,8 @@ class CoilSet:
                     (n - 0.5 * (NNR - 1)) * ln * v1
                     + (b - 0.5 * (NBR - 1)) * lb * v2,
                 )
-        dl = r[:, 1:, :, :, :] - r[:, :-1, :, :, :]
-        r_middle = (r[:, 1:, :, :, :] + r[:, :-1, :, :, :]) / 2.0
+        dl = r[:, 2::2, :, :, :] - r[:, :-2:2, :, :, :]
+        r_middle = r[:, 1::2, :, :, :]
         return r, dl, r_middle
 
     def compute_torsion(r1, r2, r3):
@@ -446,7 +446,7 @@ class CoilSet:
             for i in range(NC):
                 for n in range(NNR):
                     for b in range(NBR):
-                        for s in range(NS):
+                        for s in range(0, 2 * NS, 2):
                             f.write(
                                 "{} {} {} {}\n".format(
                                     r[i, s, n, b, 0],
@@ -457,9 +457,9 @@ class CoilSet:
                             )
                         f.write(
                             "{} {} {} {} {} {}\n".format(
-                                r[i, NS, n, b, 0],
-                                r[i, NS, n, b, 1],
-                                r[i, NS, n, b, 2],
+                                r[i, 2 * NS, n, b, 0],
+                                r[i, 2 * NS, n, b, 1],
+                                r[i, 2 * NS, n, b, 2],
                                 0.0,
                                 "{}{}{}".format(i, n, b),
                                 "coil/filament1/filament2",
