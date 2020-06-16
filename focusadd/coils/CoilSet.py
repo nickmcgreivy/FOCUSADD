@@ -132,6 +132,7 @@ class CoilSet:
             f.create_array("/", "coilSeries", numpy.asarray(fc))
             f.create_array("/", "rotationSeries", numpy.asarray(fr))
 
+    @partial(jit, static_argnums=(0,1,))
     def get_outputs(coil_data, is_frenet, params):
         """ 
 		Takes a tuple of coil parameters and sets the parameters. When the 
