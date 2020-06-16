@@ -162,6 +162,33 @@ class CoilSet:
         total_length = CoilSet.compute_total_length(dl, NNR, NBR)
         return I, dl, r, r_middle, total_length
 
+    def get_frame(coil_data, is_frenet, params):
+        NC, NS, NF, NFR, ln, lb, NNR, NBR, rc, NR = coil_data
+        theta = np.linspace(0, 2 * PI, 2 * NS + 1)
+        fc, fr = params
+        I = np.ones(NC) / (NNR * NBR)
+        # COMPUTE COIL VARIABLES
+        r_central = CoilSet.compute_r_central(coil_data, fc, theta)
+        r1 = CoilSet.compute_x1y1z1(coil_data, fc, theta)
+        r2 = CoilSet.compute_x2y2z2(coil_data, fc, theta)
+        r3 = CoilSet.compute_x3y3z3(coil_data, fc, theta)
+        torsion = CoilSet.compute_torsion(r1, r2, r3)
+        mean_torsion = CoilSet.compute_mean_torsion(torsion)
+        if is_frenet:
+            tangent, normal, binormal = CoilSet.compute_frenet(r1, r2)
+        else:
+            tangent, normal, binormal = CoilSet.compute_com(r1, fc, r_central)
+        return tangent[:,::2,:], normal[:,::2,:], binormal[:,::2,:]
+
+    def get_r_central(coil_data, is_frenet, params):
+        NC, NS, NF, NFR, ln, lb, NNR, NBR, rc, NR = coil_data
+        theta = np.linspace(0, 2 * PI, 2 * NS + 1)
+        fc, fr = params
+        I = np.ones(NC) / (NNR * NBR)
+        # COMPUTE COIL VARIABLES
+        r_central = CoilSet.compute_r_central(coil_data, fc, theta)
+        return r_central[:,::2,:]
+
     def unpack_fourier(fc):
         """
 		Takes coil fourier series fc and unpacks it into 6 components
@@ -297,7 +324,7 @@ class CoilSet:
     def compute_com(r1, fc, r_central):
         """ Computes T, N, and B """
         tangent = CoilSet.compute_tangent(r1)
-        normal = CoilSet.compute_com_normal(fc, r_central, tangent)
+        normal = -CoilSet.compute_com_normal(fc, r_central, tangent)
         binormal = CoilSet.compute_binormal(tangent, normal)
         return tangent, normal, binormal
 
@@ -400,6 +427,7 @@ class CoilSet:
                 )
         dl = r[:, 2::2, :, :, :] - r[:, :-2:2, :, :, :]
         r_middle = r[:, 1::2, :, :, :]
+        r = r[:, ::2, :, :, :]
         return r, dl, r_middle
 
     def compute_torsion(r1, r2, r3):
