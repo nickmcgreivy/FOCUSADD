@@ -17,7 +17,6 @@ class CoilSet:
 	rotation of the coils. 
 	"""
 
-
     def get_initial_data(surface, input_file=None, args_dict=None):
         """
 		There are two methods of initializing the coil set. Both require a surface which the coils surround. 
@@ -30,18 +29,7 @@ class CoilSet:
 		"""
         if input_file is not None:
             with tb.open_file(input_file, "r") as f:
-                (
-                    NC,
-                    NS,
-                    NF,
-                    NFR,
-                    ln,
-                    lb,
-                    NNR,
-                    NBR,
-                    rc,
-                    NR,
-                ) = f.root.metadata[0]
+                (NC, NS, NF, NFR, ln, lb, NNR, NBR, rc, NR,) = f.root.metadata[0]
                 fc = np.asarray(f.root.coilSeries[:, :, :])
                 fr = np.asarray(f.root.rotationSeries[:, :, :])
         elif args_dict is not None:
@@ -56,9 +44,7 @@ class CoilSet:
             NBR = args_dict["numBinormalRotate"]
             rc = args_dict["radiusCoil"]
             NR = args_dict["numRotate"]
-            r_central = surface.calc_r_coils(
-                NC, NS, rc
-            )  # Position of centroid
+            r_central = surface.calc_r_coils(NC, NS, rc)  # Position of centroid
             fc = CoilSet.compute_coil_fourierSeries(NC, NS, NF, r_central)
             fr = np.zeros((2, NC, NFR))
         else:
@@ -91,7 +77,7 @@ class CoilSet:
         xc = index_add(xc, index[:, 0], np.sum(x, axis=1) / NS)
         yc = index_add(yc, index[:, 0], np.sum(y, axis=1) / NS)
         zc = index_add(zc, index[:, 0], np.sum(z, axis=1) / NS)
-        theta = np.linspace(0, 2 * PI, NS + 1)[0 : NS]
+        theta = np.linspace(0, 2 * PI, NS + 1)[0:NS]
         for m in range(1, NF):
             xc = index_add(
                 xc, index[:, m], 2.0 * np.sum(x * np.cos(m * theta), axis=1) / NS
@@ -139,21 +125,7 @@ class CoilSet:
                 ]
             )
             arr = numpy.array(
-                [
-                    (
-                        NC,
-                        NS,
-                        NF,
-                        NFR,
-                        ln,
-                        lb,
-                        NNR,
-                        NBR,
-                        rc,
-                        NR,
-                    )
-                ],
-                dtype=metadata,
+                [(NC, NS, NF, NFR, ln, lb, NNR, NBR, rc, NR,)], dtype=metadata,
             )
             f.create_table("/", "metadata", metadata)
             f.root.metadata.append(arr)
@@ -184,10 +156,11 @@ class CoilSet:
             tangent, normal, binormal = CoilSet.compute_frenet(r1, r2)
         else:
             tangent, normal, binormal = CoilSet.compute_com(r1, fc, r_central)
-        r, dl, r_middle = CoilSet.compute_r(coil_data, theta, fr, normal, binormal, r_central)
+        r, dl, r_middle = CoilSet.compute_r(
+            coil_data, theta, fr, normal, binormal, r_central
+        )
         total_length = CoilSet.compute_total_length(dl, NNR, NBR)
         return I, dl, r, r_middle, total_length
-
 
     def unpack_fourier(fc):
         """
@@ -311,11 +284,8 @@ class CoilSet:
             (x3[:, :, np.newaxis], y3[:, :, np.newaxis], z3[:, :, np.newaxis]), axis=2
         )
 
-
     def compute_total_length(dl, NNR, NBR):
-        return np.sum(np.linalg.norm(dl, axis=-1)) / (
-            NNR * NBR
-        )
+        return np.sum(np.linalg.norm(dl, axis=-1)) / (NNR * NBR)
 
     def compute_frenet(r1, r2):
         """ Computes T, N, and B """
@@ -354,23 +324,25 @@ class CoilSet:
         x2 = r2[:, :, 0]
         y2 = r2[:, :, 1]
         z2 = r2[:, :, 2]
-        a1 = (
-            x2 * tangent[:, :, 0]
-            + y2 * tangent[:, :, 1]
-            + z2 * tangent[:, :, 2]
-        )
+        a1 = x2 * tangent[:, :, 0] + y2 * tangent[:, :, 1] + z2 * tangent[:, :, 2]
         N = r2 - tangent * a1[:, :, np.newaxis]
         norm = np.linalg.norm(N, axis=2)
         return N / norm[:, :, np.newaxis]
 
     def compute_com_normal(fc, r_central, tangent):
-        xc, yc, zc, xs, ys, zs = CoilSet.unpack_fourier(fc) # each of these is NC x NF
-        r0 = np.concatenate((xc[:, 0, np.newaxis], yc[:, 0, np.newaxis], zc[:, 0, np.newaxis]), axis=1) # NC x 3
+        xc, yc, zc, xs, ys, zs = CoilSet.unpack_fourier(fc)  # each of these is NC x NF
+        r0 = np.concatenate(
+            (xc[:, 0, np.newaxis], yc[:, 0, np.newaxis], zc[:, 0, np.newaxis]), axis=1
+        )  # NC x 3
         delta = r_central - r0[:, np.newaxis, :]
-        dot_product = tangent[:,:,0] * delta[:,:,0] + tangent[:,:,1] * delta[:,:,1] + tangent[:,:,2] * delta[:,:,2]
-        normal = delta - tangent * dot_product[:,:,np.newaxis]
-        mag = np.linalg.norm(normal,axis=-1)
-        return normal / mag[:,:,np.newaxis]
+        dot_product = (
+            tangent[:, :, 0] * delta[:, :, 0]
+            + tangent[:, :, 1] * delta[:, :, 1]
+            + tangent[:, :, 2] * delta[:, :, 2]
+        )
+        normal = delta - tangent * dot_product[:, :, np.newaxis]
+        mag = np.linalg.norm(normal, axis=-1)
+        return normal / mag[:, :, np.newaxis]
 
     def compute_binormal(tangent, normal):
         """ 
@@ -402,14 +374,8 @@ class CoilSet:
             )
         calpha = np.cos(alpha)
         salpha = np.sin(alpha)
-        v1 = (
-            calpha[:, :, np.newaxis] * normal
-            - salpha[:, :, np.newaxis] * binormal
-        )
-        v2 = (
-            salpha[:, :, np.newaxis] * normal
-            + calpha[:, :, np.newaxis] * binormal
-        )
+        v1 = calpha[:, :, np.newaxis] * normal - salpha[:, :, np.newaxis] * binormal
+        v2 = salpha[:, :, np.newaxis] * normal + calpha[:, :, np.newaxis] * binormal
         return v1, v2
 
     def compute_r(coil_data, theta, fr, normal, binormal, r_central):
@@ -430,8 +396,7 @@ class CoilSet:
                 r = index_add(
                     r,
                     index[:, :, n, b, :],
-                    (n - 0.5 * (NNR - 1)) * ln * v1
-                    + (b - 0.5 * (NBR - 1)) * lb * v2,
+                    (n - 0.5 * (NNR - 1)) * ln * v1 + (b - 0.5 * (NBR - 1)) * lb * v2,
                 )
         dl = r[:, 2::2, :, :, :] - r[:, :-2:2, :, :, :]
         r_middle = r[:, 1::2, :, :, :]
@@ -479,4 +444,3 @@ class CoilSet:
                                 "coil/filament1/filament2",
                             )
                         )
-

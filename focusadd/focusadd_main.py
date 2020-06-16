@@ -134,7 +134,11 @@ def set_args():
         type=str,
     )
     parser.add_argument(
-        "-i", "--input_file", help="Name of input file for coils", default=None, type=str
+        "-i",
+        "--input_file",
+        help="Name of input file for coils",
+        default=None,
+        type=str,
     )
     parser.add_argument(
         "-w",
@@ -186,44 +190,46 @@ def create_args_dict(args):
 
 
 def get_initial_params(filename, args):
-    surface = Surface(
-        filename,
-        args.num_zeta,
-        args.num_theta,
-        args.radius_surface,
-    )
+    surface = Surface(filename, args.num_zeta, args.num_theta, args.radius_surface,)
     input_file = args.input_file
 
     if input_file is not None:
-        coil_data, params = CoilSet.get_initial_data(surface, input_file="coils/saved/{}.hdf5".format(input_file))
+        coil_data, params = CoilSet.get_initial_data(
+            surface, input_file="coils/saved/{}.hdf5".format(input_file)
+        )
     else:
-        coil_data, params = CoilSet.get_initial_data(surface, args_dict=create_args_dict(args))
+        coil_data, params = CoilSet.get_initial_data(
+            surface, args_dict=create_args_dict(args)
+        )
 
     return coil_data, params, surface
 
 
 def main():
-
     @jit
     def update(i, opt_state):
         params = get_params(opt_state)
-        loss_val, gradient = value_and_grad(lambda params : default_loss(surface_data, coil_output_func, args.weight_length, params))(params)
+        loss_val, gradient = value_and_grad(
+            lambda params: default_loss(
+                surface_data, coil_output_func, args.weight_length, params
+            )
+        )(params)
         return opt_update(i, gradient, opt_state), loss_val
 
     args = set_args()
     axis_file = "./initFiles/axes/{}.txt".format(args.axis)
     output_file = args.output_file
     write_file = "{}.hdf5".format(output_file)
-    if (args.frame.lower() == "frenet"):
+    if args.frame.lower() == "frenet":
         is_frenet = True
-    elif (args.frame.lower() == "com"):
+    elif args.frame.lower() == "com":
         is_frenet = False
     else:
         raise Exception("Argument 'frame' needs to be 'frenet' or 'com'.")
     coil_data, init_params, surface = get_initial_params(axis_file, args)
 
     surface_data = (surface.get_r_central(), surface.get_nn(), surface.get_sg())
-    
+
     coil_output_func = partial(CoilSet.get_outputs, coil_data, is_frenet)
 
     opt_init, opt_update, get_params = args_to_op(
@@ -234,13 +240,12 @@ def main():
     loss_vals = []
     start = time.time()
 
-    for i in range(args.num_iter):    
+    for i in range(args.num_iter):
         opt_state, loss_val = update(i, opt_state)
         loss_vals.append(loss_val)
         print(loss_val)
     end = time.time()
     print(end - start)
-
 
     with open("{}.txt".format(output_file), "w") as f:
         wr = csv.writer(f, quoting=csv.QUOTE_ALL)
