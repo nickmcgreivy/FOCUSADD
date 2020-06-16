@@ -16,7 +16,7 @@ numTheta = 32
 
 numZeta = 128
 
-numSegments = 32
+numSegments = 128
 
 numFourierCoils = 5 (0th component plus 4 fourier components)
 
