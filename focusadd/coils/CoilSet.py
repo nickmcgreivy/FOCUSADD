@@ -160,7 +160,7 @@ class CoilSet:
             f.create_array("/", "coilSeries", numpy.asarray(fc))
             f.create_array("/", "rotationSeries", numpy.asarray(fr))
 
-    def get_outputs(coil_data, params):
+    def get_outputs(coil_data, is_frenet, params):
         """ 
 		Takes a tuple of coil parameters and sets the parameters. When the 
 		parameters are reset, we need to update the other variables like the coil position, frenet frame, etc. 
@@ -180,8 +180,10 @@ class CoilSet:
         r3 = CoilSet.compute_x3y3z3(coil_data, fc, theta)
         torsion = CoilSet.compute_torsion(r1, r2, r3)
         mean_torsion = CoilSet.compute_mean_torsion(torsion)
-        dsdt = CoilSet.compute_dsdt(r1)
-        tangent, normal, binormal = CoilSet.compute_frenet(r1, r2, dsdt)
+        if is_frenet:
+            tangent, normal, binormal = CoilSet.compute_frenet(r1, r2)
+        else:
+            tangent, normal, binormal = CoilSet.compute_com(r1, fc, r_central)
         r, dl, r_middle = CoilSet.compute_r(coil_data, theta, fr, normal, binormal, r_central)
         total_length = CoilSet.compute_total_length(dl, NNR, NBR)
         return I, dl, r, r_middle, total_length
@@ -309,33 +311,36 @@ class CoilSet:
             (x3[:, :, np.newaxis], y3[:, :, np.newaxis], z3[:, :, np.newaxis]), axis=2
         )
 
-    def compute_dsdt(r1):
-        """ Computes |dr/dtheta| """
-        return np.linalg.norm(r1, axis=-1)
-
 
     def compute_total_length(dl, NNR, NBR):
         return np.sum(np.linalg.norm(dl, axis=-1)) / (
             NNR * NBR
         )
 
-    def compute_frenet(r1, r2, dsdt):
+    def compute_frenet(r1, r2):
         """ Computes T, N, and B """
-        tangent = CoilSet.compute_tangent(r1, dsdt)
-        normal = CoilSet.compute_normal(r2, tangent)
+        tangent = CoilSet.compute_tangent(r1)
+        normal = CoilSet.compute_frenet_normal(r2, tangent)
         binormal = CoilSet.compute_binormal(tangent, normal)
         return tangent, normal, binormal
 
-    def compute_tangent(r1, dsdt):
+    def compute_com(r1, fc, r_central):
+        """ Computes T, N, and B """
+        tangent = CoilSet.compute_tangent(r1)
+        normal = CoilSet.compute_com_normal(fc, r_central, tangent)
+        binormal = CoilSet.compute_binormal(tangent, normal)
+        return tangent, normal, binormal
+
+    def compute_tangent(r1):
         """ 
 		Computes the tangent vector of the coils. Uses the equation 
 
 		T = dr/d_theta / |dr / d_theta|
 
 		"""
-        return r1 / dsdt[:, :, np.newaxis]
+        return r1 / np.linalg.norm(r1, axis=-1)[:, :, np.newaxis]
 
-    def compute_normal(r2, tangent):
+    def compute_frenet_normal(r2, tangent):
         """ 
 		Computes the normal vector of the coils. Uses the equation
 
@@ -357,6 +362,15 @@ class CoilSet:
         N = r2 - tangent * a1[:, :, np.newaxis]
         norm = np.linalg.norm(N, axis=2)
         return N / norm[:, :, np.newaxis]
+
+    def compute_com_normal(fc, r_central, tangent):
+        xc, yc, zc, xs, ys, zs = CoilSet.unpack_fourier(fc) # each of these is NC x NF
+        r0 = np.concatenate((xc[:, 0, np.newaxis], yc[:, 0, np.newaxis], zc[:, 0, np.newaxis]), axis=1) # NC x 3
+        delta = r_central - r0[:, np.newaxis, :]
+        dot_product = tangent[:,:,0] * delta[:,:,0] + tangent[:,:,1] * delta[:,:,1] + tangent[:,:,2] * delta[:,:,2]
+        normal = delta - tangent * dot_product[:,:,np.newaxis]
+        mag = np.linalg.norm(normal,axis=-1)
+        return normal / mag[:,:,np.newaxis]
 
     def compute_binormal(tangent, normal):
         """ 

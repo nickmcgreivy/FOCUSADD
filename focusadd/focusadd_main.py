@@ -160,6 +160,13 @@ def set_args():
         default=0.9,
         type=float,
     )
+    parser.add_argument(
+        "-fr",
+        "--frame",
+        help="Frame for coils. Either Frenet or COM.",
+        default="Frenet",
+        type=str,
+    )
     return parser.parse_args()
 
 
@@ -207,11 +214,17 @@ def main():
     axis_file = "./initFiles/axes/{}.txt".format(args.axis)
     output_file = args.output_file
     write_file = "{}.hdf5".format(output_file)
+    if (args.frame.lower() == "frenet"):
+        is_frenet = True
+    elif (args.frame.lower() == "com"):
+        is_frenet = False
+    else:
+        raise Exception("Argument 'frame' needs to be 'frenet' or 'com'.")
     coil_data, init_params, surface = get_initial_params(axis_file, args)
 
     surface_data = (surface.get_r_central(), surface.get_nn(), surface.get_sg())
     
-    coil_output_func = partial(CoilSet.get_outputs, coil_data)
+    coil_output_func = partial(CoilSet.get_outputs, coil_data, is_frenet)
 
     opt_init, opt_update, get_params = args_to_op(
         args.optimizer, args.learning_rate, args.momentum_mass
