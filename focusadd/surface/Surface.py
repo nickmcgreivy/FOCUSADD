@@ -2,6 +2,8 @@ import numpy as np
 import math as m
 from .readAxis import read_axis
 from .Axis import Axis
+from jax.config import config
+config.update("jax_enable_x64", True)
 
 PI = m.pi
 

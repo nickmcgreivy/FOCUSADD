@@ -1,20 +1,24 @@
 import jax.numpy as np
-import math
-from scipy.integrate import solve_ivp
+from jax.experimental.ode import odeint
+from functools import partial
+from jax.config import config
+import jax
+from jax import jit
+import matplotlib.pyplot as plt
+import sys
+import time
+sys.path.append("..")
 
-PI = math.pi
+from surface.Surface import Surface
+from coils.CoilSet import CoilSet
+config.update("jax_enable_x64", True)
+
+
+PI = np.pi
 
 class Poincare():
 
-	def __init__(self,coil_set,surface):
-		self.coil_set = coil_set
-		self.surface = surface
-		self.axis = self.surface.get_axis()
-		self.xList = []
-		self.yList = []
-		self.zList = []
-
-	def computeB(self,r,theta,z):
+	def computeB(I, dl, l, r, theta, z):
 		"""
 			Inputs:
 
@@ -27,11 +31,7 @@ class Poincare():
 		x = r * np.cos(theta)
 		y = r * np.sin(theta)
 		xyz = np.asarray([x,y,z])
-		l = self.coil_set.get_r_middle()
-		I = self.coil_set.get_I()
-		NNR = self.coil_set.NNR
-		NBR = self.coil_set.NBR
-		dl = self.coil_set.get_dl()
+		
 		mu_0 = 1. 
 		mu_0I = I * mu_0 # NC
 		mu_0Idl = mu_0I[:,np.newaxis,np.newaxis,np.newaxis,np.newaxis] * dl # NC x NS x NNR x NBR x 3
@@ -46,16 +46,16 @@ class Poincare():
 		B_theta = - B_x * np.sin(theta) + B_y * np.cos(theta)
 		return B_r, B_theta, B_z
 
-	def f(self,theta, arr):
-		r= arr[0]
+	def step(B_func, arr, theta):
+		r = arr[0]
 		z = arr[1]
-		B_r, B_theta, B_z = self.computeB(r, theta, z) 
+		B_r, B_theta, B_z = B_func(r, theta, z) 
 		Fr = (B_r * r / B_theta)
 		Fz = (B_z * r / B_theta)
-		return (Fr, Fz)
+		return np.asarray((Fr, Fz))
 
 
-	def getPoincarePoints(self,N_poincare,theta,radii):
+	def getPoincarePoints(N_poincare, theta, radii, surface, is_frenet, coil_data, coil_params):
 		"""
 
 			NOTE: THIS ONLY WORKS FOR THETA = 0 RIGHT NOW
@@ -77,26 +77,57 @@ class Poincare():
 
 		"""
 
-		x_axis,y_axis,z_axis = self.axis.get_r_from_zeta(theta)
+		axis = surface.get_axis()
+		x_axis,y_axis,z_axis = axis.get_r_from_zeta(theta)
 		r_axis = np.sqrt(x_axis ** 2 + y_axis ** 2)
-		v1, _ = self.axis.get_frame() # v1, v2
-		v1 = v1[0,:] # at zeta = 0 THIS LINE BREAKS THE CODE
-		ep = self.axis.epsilon
-		saep = self.axis.a * self.surface.s * np.sqrt(ep)
+		v1, _ = axis.get_frame()
+		v1 = v1[0, :] # at zeta = 0 THIS LINE BREAKS THE CODE
+		ep = axis.epsilon
+		saep = axis.a * surface.s * np.sqrt(ep)
 		ct = np.cos(theta)
 		st = np.sin(theta)
 
-		rs = []
-		zs = []
-		theta_i_f = [0, 2 * PI * (N_poincare)] # THIS LINE DOES TOO
+		rs = np.asarray([])
+		zs = np.asarray([])
+		theta_i_f = [0, 2 * PI * N_poincare] # THIS LINE DOES TOO
+		I, dl, _, l, _ = CoilSet.get_outputs(coil_data, is_frenet, coil_params)
+		B_func = partial(Poincare.computeB, I, dl, l)
+		step_partial = jit(partial(Poincare.step, B_func))
+		t_eval = np.linspace(0, 2 * PI * N_poincare, N_poincare + 1)
+
+		@jit
+		def update(r):
+			v1_normalized = r * saep * v1
+			y = np.asarray((r_axis + ct * v1_normalized[0] + st * v1_normalized[1], z_axis + v1_normalized[2]))
+			sol = odeint(step_partial, y, t_eval)
+			return sol[:, 0], sol[:, 1]
+
 
 		for r in radii:
-			v1_normalized = r * saep * v1
-			#ys.append([r_axis + ct * v1_normalized[0] + st * v1_normalized[1],z_axis + v1_normalized[2]])
-			y = [r_axis + ct * v1_normalized[0] + st * v1_normalized[1],z_axis + v1_normalized[2]]
-			sol = solve_ivp(self.f,theta_i_f,y,t_eval=np.linspace(0,2*PI*(N_poincare),N_poincare+1),method='DOP853',atol=5e-8,rtol=5e-6)
-			rs.append(np.ndarray.tolist(sol.y[0]))
-			zs.append(np.ndarray.tolist(sol.y[1]))
+			r_new, z_new = update(r)
+			rs = np.concatenate((rs, r_new))
+			zs = np.concatenate((zs, z_new))
 
 		return rs, zs
 
+
+
+def main():
+	surface = Surface("../initFiles/axes/defaultAxis.txt", 128, 32, 1.0)
+
+	radii = np.linspace(0.0,1.2,3)
+
+	start = time.time()
+
+	N = 200
+	coil_data, coil_params = CoilSet.get_initial_data(surface, input_file="../../tests/validateWithFocus/validate_focus.hdf5")
+	rs, zs = Poincare.getPoincarePoints(N, 0.0, radii, surface, False, coil_data, coil_params)
+
+	end = time.time()
+	print(end - start)
+
+	plt.plot(rs,zs,'ko', markersize=1)
+	plt.show()
+
+if __name__ == "__main__":
+	main()
