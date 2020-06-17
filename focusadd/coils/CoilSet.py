@@ -5,6 +5,8 @@ from jax.ops import index, index_add
 import math as m
 import tables as tb
 from functools import partial
+from jax.config import config
+config.update("jax_enable_x64", True)
 
 PI = m.pi
 

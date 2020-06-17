@@ -3,6 +3,8 @@ import jax.numpy as np
 import math
 from jax import jit
 from functools import partial
+from jax.config import config
+config.update("jax_enable_x64", True)
 
 PI = math.pi
 

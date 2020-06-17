@@ -13,9 +13,9 @@ from functools import partial
 import jax.experimental.optimizers as op
 from jax import value_and_grad, jit
 from surface.readAxis import read_axis
+from jax.config import config
+config.update("jax_enable_x64", True)
 
-# from jax.config import config
-# config.update("jax_enable_x64",True)
 
 
 PI = math.pi
