@@ -1,5 +1,7 @@
 import jax.numpy as np
 from .Axis import Axis
+from jax.config import config
+config.update("jax_enable_x64", True)
 
 
 def read_axis(filename):
