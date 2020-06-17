@@ -115,11 +115,11 @@ class Poincare():
 def main():
 	surface = Surface("../initFiles/axes/defaultAxis.txt", 128, 32, 1.0)
 
-	radii = np.linspace(0.0,1.2,3)
+	radii = np.linspace(0.0,1.2,15)
 
 	start = time.time()
 
-	N = 200
+	N = 400
 	coil_data, coil_params = CoilSet.get_initial_data(surface, input_file="../../tests/validateWithFocus/validate_focus.hdf5")
 	rs, zs = Poincare.getPoincarePoints(N, 0.0, radii, surface, False, coil_data, coil_params)
 

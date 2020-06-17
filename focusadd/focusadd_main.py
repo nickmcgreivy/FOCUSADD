@@ -25,10 +25,8 @@ def args_to_op(optimizer_string, lr, mom=0.9):
     return {
         "gd": lambda lr, _: op.sgd(lr),
         "sgd": lambda lr, _: op.sgd(lr),
-        "GD": lambda lr, _: op.sgd(lr),
-        "SGD": lambda lr, _: op.sgd(lr),
         "momentum": lambda lr, mom: op.momentum(lr, mom),
-    }[optimizer_string](lr, mom)
+    }[optimizer_string.lower()](lr, mom)
 
 
 def set_args():
@@ -154,7 +152,7 @@ def set_args():
         "-op",
         "--optimizer",
         help="Name of optimizer. Either SGD, GD (same) or Momentum",
-        default="GD",
+        default="Momentum",
         type=str,
     )
     parser.add_argument(
@@ -168,7 +166,7 @@ def set_args():
         "-fr",
         "--frame",
         help="Frame for coils. Either Frenet or COM.",
-        default="Frenet",
+        default="COM",
         type=str,
     )
     return parser.parse_args()
