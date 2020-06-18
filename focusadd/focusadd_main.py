@@ -35,7 +35,7 @@ def set_args():
         "-n",
         "--num_iter",
         help="Number of iterations by the optimizer",
-        default=10,
+        default=500,
         type=int,
     )
     parser.add_argument(
@@ -49,24 +49,24 @@ def set_args():
         "-nz",
         "--num_zeta",
         help="Number of gridpoints in zeta (toroidal angle) on the magnetic surface",
-        default=64,
+        default=128,
         type=int,
     )
     parser.add_argument(
-        "-nc", "--num_coils", help="Number of coils", default=8, type=int
+        "-nc", "--num_coils", help="Number of coils", default=20, type=int
     )
     parser.add_argument(
         "-ns",
         "--num_segments",
         help="Number of segments in each coil",
-        default=32,
+        default=128,
         type=int,
     )
     parser.add_argument(
         "-nfc",
         "--num_fourier_coils",
         help="Number of Fourier Components describing each coil",
-        default=4,
+        default=6,
         type=int,
     )
     parser.add_argument(
@@ -94,14 +94,14 @@ def set_args():
         "-ln",
         "--length_normal",
         help="Length between each coil in the (rotated) normal direction",
-        default=0.01,
+        default=0.015,
         type=float,
     )
     parser.add_argument(
         "-lb",
         "--length_binormal",
         help="Length between each coil in the (rotated) binormal direction",
-        default=0.01,
+        default=0.015,
         type=float,
     )
     parser.add_argument(
@@ -146,13 +146,20 @@ def set_args():
         type=float,
     )
     parser.add_argument(
-        "-a", "--axis", help="Name of axis file", default="defaultAxis", type=str
+        "-wb",
+        "--weight_B",
+        help="Length of weight paid to quadratic flux",
+        default=1e3,
+        type=float,
+    )
+    parser.add_argument(
+        "-a", "--axis", help="Name of axis file", default="ellipticalAxis4Rotate", type=str
     )
     parser.add_argument(
         "-op",
         "--optimizer",
         help="Name of optimizer. Either SGD, GD (same) or Momentum",
-        default="Momentum",
+        default="momentum",
         type=str,
     )
     parser.add_argument(
@@ -166,7 +173,7 @@ def set_args():
         "-fr",
         "--frame",
         help="Frame for coils. Either Frenet or COM.",
-        default="COM",
+        default="com",
         type=str,
     )
     return parser.parse_args()
@@ -207,9 +214,10 @@ def main():
     @jit
     def update(i, opt_state):
         params = get_params(opt_state)
+        w_args = (args.weight_B, args.weight_length)
         loss_val, gradient = value_and_grad(
             lambda params: default_loss(
-                surface_data, coil_output_func, args.weight_length, params
+                surface_data, coil_output_func, w_args, params
             )
         )(params)
         return opt_update(i, gradient, opt_state), loss_val

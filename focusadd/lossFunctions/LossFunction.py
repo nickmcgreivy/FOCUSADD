@@ -9,10 +9,10 @@ PI = math.pi
 class LossFunction:
 
     @jit
-    def bnsquared(r, I, dl, l, nn, sg):
+    def quadratic_flux(r, I, dl, l, nn, sg):
         """ 
 
-		Computes 1/2(B dot n)^2 dA over the surface from the coils, but doesn't sum over the entire surface yet. 
+		Computes the normalized quadratic flux over the whole surface.
 			
 		Inputs:
 
@@ -25,13 +25,13 @@ class LossFunction:
 		
 		Returns: 
 
-		A NZ x NT array which computes 1/2(B dot n)^2 dA at each point on the surface. 
+		A NZ x NT array which computes integral of 1/2(B dot n)^2 dA / integral of B^2 dA. 
 		We can eventually sum over this array to get the total integral over the surface. I choose not to
 		sum so that we can compute gradients of the surface magnetic normal if we'd like. 
 
 		"""
         B = LossFunction.biotSavart(r, I, dl, l)  # NZ x NT x 3
-        return 0.5 * np.sum(nn * B, axis=-1) ** 2 * sg  # NZ x NT
+        return 0.5 * np.sum(np.sum(nn * B, axis=-1) ** 2 * sg) / np.sum(np.sum(B * B, axis=-1) * sg)  # NZ x NT
 
     @jit
     def biotSavart(r, I, dl, l):

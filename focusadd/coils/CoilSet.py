@@ -46,8 +46,8 @@ class CoilSet:
             NBR = args_dict["numBinormalRotate"]
             rc = args_dict["radiusCoil"]
             NR = args_dict["numRotate"]
-            r_central = surface.calc_r_coils(NC, NS, rc)  # Position of centroid
-            fc = CoilSet.compute_coil_fourierSeries(NC, NS, NF, r_central)
+            r_centroid = surface.calc_r_coils(NC, NS, rc)  # Position of centroid
+            fc = CoilSet.compute_coil_fourierSeries(NC, NS, NF, r_centroid)
             fr = np.zeros((2, NC, NFR))
         else:
             raise Exception("No file or args_dict passed to initialize coil set. ")
@@ -56,20 +56,20 @@ class CoilSet:
         params = fc, fr
         return coil_data, params
 
-    def compute_coil_fourierSeries(NC, NS, NF, r_central):
+    def compute_coil_fourierSeries(NC, NS, NF, r_centroid):
         """ 
 		Takes a  and gives the coefficients
 		of the coil fourier series in a single array 
 
 		Inputs:
-		r_central (nparray): vector of length NC x NS + 1 x 3, initial coil centroid
+		r_centroid (nparray): vector of length NC x NS + 1 x 3, initial coil centroid
 
 		Returns:
 		6 x NC x NF array with the Fourier Coefficients of the initial coils
 		"""
-        x = r_central[:, 0:-1, 0]  # NC x NS
-        y = r_central[:, 0:-1, 1]
-        z = r_central[:, 0:-1, 2]
+        x = r_centroid[:, 0:-1, 0]  # NC x NS
+        y = r_centroid[:, 0:-1, 1]
+        z = r_centroid[:, 0:-1, 2]
         xc = np.zeros((NC, NF))
         yc = np.zeros((NC, NF))
         zc = np.zeros((NC, NF))
@@ -149,7 +149,7 @@ class CoilSet:
         fc, fr = params
         I = np.ones(NC) / (NNR * NBR)
         # COMPUTE COIL VARIABLES
-        r_central = CoilSet.compute_r_central(coil_data, fc, theta)
+        r_centroid = CoilSet.compute_r_centroid(coil_data, fc, theta)
         r1 = CoilSet.compute_x1y1z1(coil_data, fc, theta)
         r2 = CoilSet.compute_x2y2z2(coil_data, fc, theta)
         r3 = CoilSet.compute_x3y3z3(coil_data, fc, theta)
@@ -158,12 +158,12 @@ class CoilSet:
         if is_frenet:
             tangent, normal, binormal = CoilSet.compute_frenet(r1, r2)
         else:
-            tangent, normal, binormal = CoilSet.compute_com(r1, fc, r_central)
+            tangent, normal, binormal = CoilSet.compute_com(r1, fc, r_centroid)
         r, dl, r_middle = CoilSet.compute_r(
-            coil_data, theta, fr, normal, binormal, r_central
+            coil_data, theta, fr, normal, binormal, r_centroid
         )
-        total_length = CoilSet.compute_total_length(dl, NNR, NBR)
-        return I, dl, r, r_middle, total_length
+        av_length = CoilSet.compute_average_length(r_centroid, NC)
+        return I, dl, r, r_middle, av_length
 
     def get_frame(coil_data, is_frenet, params):
         NC, NS, NF, NFR, ln, lb, NNR, NBR, rc, NR = coil_data
@@ -171,7 +171,7 @@ class CoilSet:
         fc, fr = params
         I = np.ones(NC) / (NNR * NBR)
         # COMPUTE COIL VARIABLES
-        r_central = CoilSet.compute_r_central(coil_data, fc, theta)
+        r_centroid = CoilSet.compute_r_centroid(coil_data, fc, theta)
         r1 = CoilSet.compute_x1y1z1(coil_data, fc, theta)
         r2 = CoilSet.compute_x2y2z2(coil_data, fc, theta)
         r3 = CoilSet.compute_x3y3z3(coil_data, fc, theta)
@@ -180,17 +180,17 @@ class CoilSet:
         if is_frenet:
             tangent, normal, binormal = CoilSet.compute_frenet(r1, r2)
         else:
-            tangent, normal, binormal = CoilSet.compute_com(r1, fc, r_central)
+            tangent, normal, binormal = CoilSet.compute_com(r1, fc, r_centroid)
         return tangent[:,::2,:], normal[:,::2,:], binormal[:,::2,:]
 
-    def get_r_central(coil_data, is_frenet, params):
+    def get_r_centroid(coil_data, is_frenet, params):
         NC, NS, NF, NFR, ln, lb, NNR, NBR, rc, NR = coil_data
         theta = np.linspace(0, 2 * PI, 2 * NS + 1)
         fc, fr = params
         I = np.ones(NC) / (NNR * NBR)
         # COMPUTE COIL VARIABLES
-        r_central = CoilSet.compute_r_central(coil_data, fc, theta)
-        return r_central[:,::2,:]
+        r_centroid = CoilSet.compute_r_centroid(coil_data, fc, theta)
+        return r_centroid[:,::2,:]
 
     def unpack_fourier(fc):
         """
@@ -204,7 +204,7 @@ class CoilSet:
         zs = fc[5]
         return xc, yc, zc, xs, ys, zs
 
-    def compute_r_central(coil_data, fc, theta):
+    def compute_r_centroid(coil_data, fc, theta):
         NC, NS, NF, _, _, _, _, _, _, _ = coil_data
         """ Computes the position of the winding pack centroid using the coil fourier series """
         xc, yc, zc, xs, ys, zs = CoilSet.unpack_fourier(fc)
@@ -314,8 +314,9 @@ class CoilSet:
             (x3[:, :, np.newaxis], y3[:, :, np.newaxis], z3[:, :, np.newaxis]), axis=2
         )
 
-    def compute_total_length(dl, NNR, NBR):
-        return np.sum(np.linalg.norm(dl, axis=-1)) / (NNR * NBR)
+    def compute_average_length(r_centroid, NC):
+        dl_centroid = r_centroid[:, 1:, :] - r_centroid[:, :-1, :]
+        return np.sum(np.linalg.norm(dl_centroid, axis=-1)) / (NC)
 
     def compute_frenet(r1, r2):
         """ Computes T, N, and B """
@@ -324,10 +325,10 @@ class CoilSet:
         binormal = CoilSet.compute_binormal(tangent, normal)
         return tangent, normal, binormal
 
-    def compute_com(r1, fc, r_central):
+    def compute_com(r1, fc, r_centroid):
         """ Computes T, N, and B """
         tangent = CoilSet.compute_tangent(r1)
-        normal = -CoilSet.compute_com_normal(fc, r_central, tangent)
+        normal = -CoilSet.compute_com_normal(fc, r_centroid, tangent)
         binormal = CoilSet.compute_binormal(tangent, normal)
         return tangent, normal, binormal
 
@@ -359,12 +360,12 @@ class CoilSet:
         norm = np.linalg.norm(N, axis=2)
         return N / norm[:, :, np.newaxis]
 
-    def compute_com_normal(fc, r_central, tangent):
+    def compute_com_normal(fc, r_centroid, tangent):
         xc, yc, zc, xs, ys, zs = CoilSet.unpack_fourier(fc)  # each of these is NC x NF
         r0 = np.concatenate(
             (xc[:, 0, np.newaxis], yc[:, 0, np.newaxis], zc[:, 0, np.newaxis]), axis=1
         )  # NC x 3
-        delta = r_central - r0[:, np.newaxis, :]
+        delta = r_centroid - r0[:, np.newaxis, :]
         dot_product = (
             tangent[:, :, 0] * delta[:, :, 0]
             + tangent[:, :, 1] * delta[:, :, 1]
@@ -408,7 +409,7 @@ class CoilSet:
         v2 = salpha[:, :, np.newaxis] * normal + calpha[:, :, np.newaxis] * binormal
         return v1, v2
 
-    def compute_r(coil_data, theta, fr, normal, binormal, r_central):
+    def compute_r(coil_data, theta, fr, normal, binormal, r_centroid):
         """
 		Computes the position of the multi-filament coils.
 
@@ -420,7 +421,7 @@ class CoilSet:
         NC, NS, NF, NFR, ln, lb, NNR, NBR, _, _ = coil_data
         v1, v2 = CoilSet.compute_frame(coil_data, theta, fr, normal, binormal)
         r = np.zeros((NC, 2 * NS + 1, NNR, NBR, 3))
-        r += r_central[:, :, np.newaxis, np.newaxis, :]
+        r += r_centroid[:, :, np.newaxis, np.newaxis, :]
         for n in range(NNR):
             for b in range(NBR):
                 r = index_add(
