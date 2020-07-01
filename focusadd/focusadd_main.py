@@ -176,6 +176,14 @@ def set_args():
         default="com",
         type=str,
     )
+    parser.add_argument(
+        "-res",
+        "--axis_resolution",
+        help="Resolution of the axis, multiplies NZ.",
+        default=20,
+        type=int,
+    )
+
     return parser.parse_args()
 
 
@@ -195,7 +203,7 @@ def create_args_dict(args):
 
 
 def get_initial_params(filename, args):
-    surface = Surface(filename, args.num_zeta, args.num_theta, args.radius_surface,)
+    surface = Surface(filename, args.num_zeta, args.num_theta, args.radius_surface, res = args.axis_resolution)
     input_file = args.input_file
 
     if input_file is not None:
@@ -235,6 +243,7 @@ def main():
     coil_data, init_params, surface = get_initial_params(axis_file, args)
 
     surface_data = (surface.get_r_central(), surface.get_nn(), surface.get_sg())
+    #surface_data = surface.get_data()
 
     coil_output_func = partial(CoilSet.get_outputs, coil_data, is_frenet)
 
