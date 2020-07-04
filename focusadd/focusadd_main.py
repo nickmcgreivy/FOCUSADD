@@ -21,12 +21,13 @@ config.update("jax_enable_x64", True)
 PI = math.pi
 
 
-def args_to_op(optimizer_string, lr, mom=0.9):
+def args_to_op(optimizer_string, lr, mom=0.9, var = 0.999, eps = 1e-7):
     return {
-        "gd": lambda lr, _: op.sgd(lr),
-        "sgd": lambda lr, _: op.sgd(lr),
-        "momentum": lambda lr, mom: op.momentum(lr, mom),
-    }[optimizer_string.lower()](lr, mom)
+        "gd": lambda lr, _, _, _: op.sgd(lr),
+        "sgd": lambda lr, _, _, _: op.sgd(lr),
+        "momentum": lambda lr, mom, _, _: op.momentum(lr, mom),
+        "adam" : lambda lr, mom, var, eps: op.adam(lr, mom, var, eps)
+    }[optimizer_string.lower()](lr, mom, var, eps)
 
 
 def set_args():
@@ -142,7 +143,7 @@ def set_args():
         "-w",
         "--weight_length",
         help="Length of weight paid to coils",
-        default=0.1,
+        default=0.5,
         type=float,
     )
     parser.add_argument(
@@ -227,7 +228,7 @@ def main():
             lambda params: default_loss(
                 surface_data, coil_output_func, w_args, params
             )
-        )(params)
+        )(fr)
         return opt_update(i, gradient, opt_state), loss_val
 
     args = set_args()
