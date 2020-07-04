@@ -7,7 +7,6 @@ PI = math.pi
 
 
 class LossFunction:
-
     @jit
     def quadratic_flux(r, I, dl, l, nn, sg):
         """ 
@@ -31,7 +30,11 @@ class LossFunction:
 
 		"""
         B = LossFunction.biotSavart(r, I, dl, l)  # NZ x NT x 3
-        return 0.5 * np.sum(np.sum(nn * B, axis=-1) ** 2 * sg) / np.sum(np.sum(B * B, axis=-1) * sg)  # NZ x NT
+        return (
+            0.5
+            * np.sum(np.sum(nn * B, axis=-1) ** 2 * sg)
+            / np.sum(np.sum(B * B, axis=-1) * sg)
+        )  # NZ x NT
 
     @jit
     def biotSavart(r, I, dl, l):

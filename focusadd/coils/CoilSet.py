@@ -6,6 +6,7 @@ import math as m
 import tables as tb
 from functools import partial
 from jax.config import config
+
 config.update("jax_enable_x64", True)
 
 PI = m.pi
@@ -156,9 +157,7 @@ class CoilSet:
         torsion = CoilSet.compute_torsion(r1, r2, r3)
         mean_torsion = CoilSet.compute_mean_torsion(torsion)
         tangent, normal, binormal = CoilSet.compute_com(r1, fc, r_centroid)
-        r = CoilSet.compute_r(
-            coil_data, theta, fr, normal, binormal, r_centroid
-        )
+        r = CoilSet.compute_r(coil_data, theta, fr, normal, binormal, r_centroid)
         frame = tangent, normal, binormal
         dl = CoilSet.compute_dl(coil_data, theta, params, frame, r1, r2, r_centroid)
         av_length = CoilSet.compute_average_length(r_centroid, NC)
@@ -325,8 +324,12 @@ class CoilSet:
         T, N, B = frame
         fc, _ = params
         tangent_deriv = CoilSet.compute_tangent_deriv(r1, r2)
-        normal_deriv = -CoilSet.compute_normal_deriv(fc, T, tangent_deriv, r1, r_centroid)
-        binormal_deriv = CoilSet.compute_binormal_deriv(T, N, tangent_deriv, normal_deriv)
+        normal_deriv = -CoilSet.compute_normal_deriv(
+            fc, T, tangent_deriv, r1, r_centroid
+        )
+        binormal_deriv = CoilSet.compute_binormal_deriv(
+            T, N, tangent_deriv, normal_deriv
+        )
         return tangent_deriv, normal_deriv, binormal_deriv
 
     def compute_tangent(r1):
@@ -341,14 +344,16 @@ class CoilSet:
         mag_2 = CoilSet.dot_product_rank3_tensor(r1, r2) / norm_r1 ** 3
         return r2 / norm_r1[:, :, np.newaxis] - r1 * mag_2[:, :, np.newaxis]
 
-    def dot_product_rank3_tensor(a,b):
-        return a[:,:,0] * b[:,:,0] + a[:,:,1] * b[:,:,1] + a[:,:,2] * b[:,:,2]
+    def dot_product_rank3_tensor(a, b):
+        return (
+            a[:, :, 0] * b[:, :, 0] + a[:, :, 1] * b[:, :, 1] + a[:, :, 2] * b[:, :, 2]
+        )
 
     def compute_coil_com(fc):
         xc, yc, zc, xs, ys, zs = CoilSet.unpack_fourier(fc)  # each of these is NC x NF
         return np.concatenate(
             (xc[:, 0, np.newaxis], yc[:, 0, np.newaxis], zc[:, 0, np.newaxis]), axis=1
-        ) # NC x 3
+        )  # NC x 3
 
     def compute_normal(fc, r_centroid, tangent):
         r0 = CoilSet.compute_coil_com(fc)
@@ -366,9 +371,16 @@ class CoilSet:
         dp3 = CoilSet.dot_product_rank3_tensor(tangent_deriv, delta)
         numerator = delta - T * dp1[:, :, np.newaxis]
         numerator_norm = np.linalg.norm(numerator, axis=-1)
-        numerator_deriv = r1 - dp1[:,:,np.newaxis] * tangent_deriv - T * (dp2 + dp3)[:,:,np.newaxis] 
-        dp4 = CoilSet.dot_product_rank3_tensor(numerator,numerator_deriv)
-        return numerator_deriv / numerator_norm[:,:,np.newaxis] - (dp4 / numerator_norm**3)[:,:,np.newaxis] * numerator
+        numerator_deriv = (
+            r1
+            - dp1[:, :, np.newaxis] * tangent_deriv
+            - T * (dp2 + dp3)[:, :, np.newaxis]
+        )
+        dp4 = CoilSet.dot_product_rank3_tensor(numerator, numerator_deriv)
+        return (
+            numerator_deriv / numerator_norm[:, :, np.newaxis]
+            - (dp4 / numerator_norm ** 3)[:, :, np.newaxis] * numerator
+        )
 
     def compute_binormal(tangent, normal):
         """ Computes the binormal vector of the coils, B = T x N """
@@ -408,7 +420,6 @@ class CoilSet:
             )
         return alpha_1
 
-
     def compute_frame(coil_data, theta, fr, N, B):
         """
 		Computes the vectors v1 and v2 for each coil. v1 and v2 are rotated relative to
@@ -429,8 +440,18 @@ class CoilSet:
         salpha = np.sin(alpha)
         alpha1 = CoilSet.compute_alpha_1(coil_data, theta, fr)
         _, dNdt, dBdt = CoilSet.compute_com_deriv(params, frame, r1, r2, r_centroid)
-        dv1_dt = calpha[:, :, np.newaxis] * dNdt - salpha[:, :, np.newaxis] * dBdt - salpha[:, :, np.newaxis] * N * alpha1[:, :, np.newaxis] - calpha[:, :, np.newaxis] * B * alpha1[:, :, np.newaxis]
-        dv2_dt = salpha[:, :, np.newaxis] * dNdt + calpha[:, :, np.newaxis] * dBdt + calpha[:, :, np.newaxis] * N * alpha1[:, :, np.newaxis] - salpha[:, :, np.newaxis] * B * alpha1[:, :, np.newaxis]
+        dv1_dt = (
+            calpha[:, :, np.newaxis] * dNdt
+            - salpha[:, :, np.newaxis] * dBdt
+            - salpha[:, :, np.newaxis] * N * alpha1[:, :, np.newaxis]
+            - calpha[:, :, np.newaxis] * B * alpha1[:, :, np.newaxis]
+        )
+        dv2_dt = (
+            salpha[:, :, np.newaxis] * dNdt
+            + calpha[:, :, np.newaxis] * dBdt
+            + calpha[:, :, np.newaxis] * N * alpha1[:, :, np.newaxis]
+            - salpha[:, :, np.newaxis] * B * alpha1[:, :, np.newaxis]
+        )
         return dv1_dt, dv2_dt
 
     def compute_r(coil_data, theta, fr, normal, binormal, r_centroid):
@@ -459,16 +480,18 @@ class CoilSet:
         NC, NS, NF, NFR, ln, lb, NNR, NBR, _, _ = coil_data
         dl = np.zeros((NC, NS + 1, NNR, NBR, 3))
         dl += r1[:, :, np.newaxis, np.newaxis, :]
-        dv1_dt, dv2_dt = CoilSet.compute_frame_derivative(coil_data, theta, params, frame, r1, r2, r_centroid)
+        dv1_dt, dv2_dt = CoilSet.compute_frame_derivative(
+            coil_data, theta, params, frame, r1, r2, r_centroid
+        )
         for n in range(NNR):
             for b in range(NBR):
                 dl = index_add(
                     dl,
                     index[:, :, n, b, :],
-                    (n - 0.5 * (NNR - 1)) * ln * dv1_dt + (b - 0.5 * (NBR - 1)) * lb * dv2_dt,
+                    (n - 0.5 * (NNR - 1)) * ln * dv1_dt
+                    + (b - 0.5 * (NBR - 1)) * lb * dv2_dt,
                 )
         return dl[:, :-1, :, :, :] * (2 * PI / NS)
-
 
     def compute_torsion(r1, r2, r3):
         cross12 = np.cross(r1, r2)

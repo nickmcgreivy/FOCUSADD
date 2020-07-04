@@ -14,19 +14,19 @@ import jax.experimental.optimizers as op
 from jax import value_and_grad, jit
 from surface.readAxis import read_axis
 from jax.config import config
-config.update("jax_enable_x64", True)
 
+config.update("jax_enable_x64", True)
 
 
 PI = math.pi
 
 
-def args_to_op(optimizer_string, lr, mom=0.9, var = 0.999, eps = 1e-7):
+def args_to_op(optimizer_string, lr, mom=0.9, var=0.999, eps=1e-7):
     return {
         "gd": lambda lr, *unused: op.sgd(lr),
         "sgd": lambda lr, *unused: op.sgd(lr),
         "momentum": lambda lr, mom, *unused: op.momentum(lr, mom),
-        "adam": lambda lr, mom, var, eps: op.adam(lr, mom, var, eps)
+        "adam": lambda lr, mom, var, eps: op.adam(lr, mom, var, eps),
     }[optimizer_string.lower()](lr, mom, var, eps)
 
 
@@ -154,7 +154,11 @@ def set_args():
         type=float,
     )
     parser.add_argument(
-        "-a", "--axis", help="Name of axis file", default="ellipticalAxis4Rotate", type=str
+        "-a",
+        "--axis",
+        help="Name of axis file",
+        default="ellipticalAxis4Rotate",
+        type=str,
     )
     parser.add_argument(
         "-op",
@@ -197,7 +201,13 @@ def create_args_dict(args):
 
 
 def get_initial_params(filename, args):
-    surface = Surface(filename, args.num_zeta, args.num_theta, args.radius_surface, res = args.axis_resolution)
+    surface = Surface(
+        filename,
+        args.num_zeta,
+        args.num_theta,
+        args.radius_surface,
+        res=args.axis_resolution,
+    )
     input_file = args.input_file
 
     if input_file is not None:
@@ -218,9 +228,7 @@ def main():
         params = get_params(opt_state)
         w_args = (args.weight_B, args.weight_length)
         loss_val, gradient = value_and_grad(
-            lambda params: default_loss(
-                surface_data, coil_output_func, w_args, params
-            )
+            lambda params: default_loss(surface_data, coil_output_func, w_args, params)
         )(params)
         return opt_update(i, gradient, opt_state), loss_val
 
@@ -236,7 +244,7 @@ def main():
     coil_output_func = partial(CoilSet.get_outputs, coil_data)
 
     opt_init, opt_update, get_params = args_to_op(
-        args.optimizer, args.learning_rate, args.momentum_mass, 
+        args.optimizer, args.learning_rate, args.momentum_mass,
     )
     opt_state = opt_init(init_params)
 

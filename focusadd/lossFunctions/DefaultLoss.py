@@ -4,6 +4,7 @@ import math
 from jax import jit
 from functools import partial
 from jax.config import config
+
 config.update("jax_enable_x64", True)
 
 PI = math.pi
@@ -22,13 +23,6 @@ def default_loss(surface_data, params_to_data, w_args, params):
     r_surf, nn, sg = surface_data
     I, dl, r, total_length = params_to_data(params)
 
-    B_loss_val = LossFunction.quadratic_flux(
-            r_surf,
-            I,
-            dl,
-            r,
-            nn,
-            sg,
-        )
+    B_loss_val = LossFunction.quadratic_flux(r_surf, I, dl, r, nn, sg,)
 
     return w_B * B_loss_val + w_L * total_length

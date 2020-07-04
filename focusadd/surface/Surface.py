@@ -3,6 +3,7 @@ import math as m
 from .readAxis import read_axis
 from .Axis import Axis
 from jax.config import config
+
 config.update("jax_enable_x64", True)
 
 PI = m.pi
@@ -14,7 +15,7 @@ class Surface:
 	Represents the outer magnetic surface of the plasma. 
 	"""
 
-    def __init__(self, filename, num_zeta, num_theta, s, res = 20):
+    def __init__(self, filename, num_zeta, num_theta, s, res=20):
         """
 		Initializes the magnetic surface. 
 
@@ -32,14 +33,14 @@ class Surface:
         self.filename = filename
         self.NT = num_theta
         self.NZ = num_zeta
-        self.axis = Axis(read_axis(self.filename), num_zeta, res = res)
+        self.axis = Axis(read_axis(self.filename), num_zeta, res=res)
         self.epsilon = self.axis.epsilon
         self.a = self.axis.a
         self.NR = self.axis.NR
         self.zeta_off = self.axis.zeta_off
 
-        #self.num_zeta = num_zeta
-        #self.num_theta = num_theta
+        # self.num_zeta = num_zeta
+        # self.num_theta = num_theta
         self.s = s
         self.initialize_surface()
 
@@ -77,7 +78,7 @@ class Surface:
         r += sa * np.sqrt(ep) * v1[:, np.newaxis, :] * ctheta[np.newaxis, :, np.newaxis]
         r += sa * v2[:, np.newaxis, :] * stheta[np.newaxis, :, np.newaxis] / np.sqrt(ep)
         self.r = r
-        self.r_central = self.r[:-1,:-1,:]
+        self.r_central = self.r[:-1, :-1, :]
         """self.r_central = (
             self.r[1:, 1:, :]
             + self.r[1:, :-1, :]
@@ -231,8 +232,8 @@ class Surface:
         self.calc_drdt()
         self.calc_drdz()
         nn = np.cross(self.drdt, self.drdz)
-        nn = nn[:-1,:-1,:]
-        #nn = (nn[1:, 1:, :] + nn[1:, :-1, :] + nn[:-1, 1:, :] + nn[:-1, :-1, :]) / 4.0
+        nn = nn[:-1, :-1, :]
+        # nn = (nn[1:, 1:, :] + nn[1:, :-1, :] + nn[:-1, 1:, :] + nn[:-1, :-1, :]) / 4.0
         self.sg = np.linalg.norm(nn * 4 * PI ** 2 / (self.NT * self.NZ), axis=2)
         self.nn = nn / np.linalg.norm(nn, axis=2)[:, :, np.newaxis]
 
@@ -251,4 +252,4 @@ class Surface:
         return self.axis
 
     def get_data(self):
-        return 
+        return
