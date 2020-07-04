@@ -23,10 +23,10 @@ PI = math.pi
 
 def args_to_op(optimizer_string, lr, mom=0.9, var = 0.999, eps = 1e-7):
     return {
-        "gd": lambda lr, _, _, _: op.sgd(lr),
-        "sgd": lambda lr, _, _, _: op.sgd(lr),
-        "momentum": lambda lr, mom, _, _: op.momentum(lr, mom),
-        "adam" : lambda lr, mom, var, eps: op.adam(lr, mom, var, eps)
+        "gd": lambda lr, *unused: op.sgd(lr),
+        "sgd": lambda lr, *unused: op.sgd(lr),
+        "momentum": lambda lr, mom, *unused: op.momentum(lr, mom),
+        "adam": lambda lr, mom, var, eps: op.adam(lr, mom, var, eps)
     }[optimizer_string.lower()](lr, mom, var, eps)
 
 
@@ -159,7 +159,7 @@ def set_args():
     parser.add_argument(
         "-op",
         "--optimizer",
-        help="Name of optimizer. Either SGD, GD (same) or Momentum",
+        help="Name of optimizer. Either SGD, GD (same), Momentum, or Adam",
         default="momentum",
         type=str,
     )
@@ -169,13 +169,6 @@ def set_args():
         help="Momentum mass parameter.",
         default=0.9,
         type=float,
-    )
-    parser.add_argument(
-        "-fr",
-        "--frame",
-        help="Frame for coils. Either Frenet or COM.",
-        default="com",
-        type=str,
     )
     parser.add_argument(
         "-res",
@@ -228,28 +221,22 @@ def main():
             lambda params: default_loss(
                 surface_data, coil_output_func, w_args, params
             )
-        )(fr)
+        )(params)
         return opt_update(i, gradient, opt_state), loss_val
 
     args = set_args()
     axis_file = "./initFiles/axes/{}.txt".format(args.axis)
     output_file = args.output_file
     write_file = "{}.hdf5".format(output_file)
-    if args.frame.lower() == "frenet":
-        is_frenet = True
-    elif args.frame.lower() == "com":
-        is_frenet = False
-    else:
-        raise Exception("Argument 'frame' needs to be 'frenet' or 'com'.")
+
     coil_data, init_params, surface = get_initial_params(axis_file, args)
 
     surface_data = (surface.get_r_central(), surface.get_nn(), surface.get_sg())
-    #surface_data = surface.get_data()
 
-    coil_output_func = partial(CoilSet.get_outputs, coil_data, is_frenet)
+    coil_output_func = partial(CoilSet.get_outputs, coil_data)
 
     opt_init, opt_update, get_params = args_to_op(
-        args.optimizer, args.learning_rate, args.momentum_mass
+        args.optimizer, args.learning_rate, args.momentum_mass, 
     )
     opt_state = opt_init(init_params)
 

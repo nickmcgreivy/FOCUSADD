@@ -19,14 +19,14 @@ def default_loss(surface_data, params_to_data, w_args, params):
 	this in an optimizer.
 	"""
     w_B, w_L = w_args
-    r_surf_central, nn, sg = surface_data
-    I, dl, _, r_midpoint, total_length = params_to_data(params)
+    r_surf, nn, sg = surface_data
+    I, dl, r, total_length = params_to_data(params)
 
     B_loss_val = LossFunction.quadratic_flux(
-            r_surf_central,
+            r_surf,
             I,
             dl,
-            r_midpoint,
+            r,
             nn,
             sg,
         )
