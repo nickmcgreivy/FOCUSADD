@@ -43,7 +43,7 @@ def set_args():
         "-nt",
         "--num_theta",
         help="Number of gridpoints in theta (poloidal angle) on the magnetic surface",
-        default=32,
+        default=16,
         type=int,
     )
     parser.add_argument(
@@ -60,7 +60,7 @@ def set_args():
         "-ns",
         "--num_segments",
         help="Number of segments in each coil",
-        default=128,
+        default=64,
         type=int,
     )
     parser.add_argument(
@@ -120,9 +120,16 @@ def set_args():
     )
     parser.add_argument(
         "-lr",
-        "--learning_rate",
+        "--learning_rate_fc",
         help="Learning Rate of SGD, ODEFlow, Newtons Method",
         default=0.0001,
+        type=float,
+    )
+    parser.add_argument(
+        "-lrfr",
+        "--learning_rate_fr",
+        help="Learning Rate of SGD, ODEFlow, Newtons Method for coil rotation",
+        default=1.0,
         type=float,
     )
     parser.add_argument(
@@ -178,7 +185,7 @@ def set_args():
         "-res",
         "--axis_resolution",
         help="Resolution of the axis, multiplies NZ.",
-        default=20,
+        default=10,
         type=int,
     )
 
@@ -224,13 +231,16 @@ def get_initial_params(filename, args):
 
 def main():
     @jit
-    def update(i, opt_state):
-        params = get_params(opt_state)
+    def update(i, opt_state_fc, opt_state_fr):
+        fc = get_params_fc(opt_state_fc)
+        fr = get_params_fr(opt_state_fr)
+        params = fc, fr
         w_args = (args.weight_B, args.weight_length)
         loss_val, gradient = value_and_grad(
             lambda params: default_loss(surface_data, coil_output_func, w_args, params)
         )(params)
-        return opt_update(i, gradient, opt_state), loss_val
+        g_fc, g_fr = gradient
+        return opt_update_fc(i, g_fc, opt_state_fc), opt_update_fr(i, g_fr, opt_state_fr), loss_val
 
     args = set_args()
     axis_file = "./initFiles/axes/{}.txt".format(args.axis)
@@ -238,21 +248,26 @@ def main():
     write_file = "{}.hdf5".format(output_file)
 
     coil_data, init_params, surface = get_initial_params(axis_file, args)
+    fc_init, fr_init = init_params
 
     surface_data = (surface.get_r_central(), surface.get_nn(), surface.get_sg())
 
     coil_output_func = partial(CoilSet.get_outputs, coil_data)
 
-    opt_init, opt_update, get_params = args_to_op(
-        args.optimizer, args.learning_rate, args.momentum_mass,
+    opt_init_fc, opt_update_fc, get_params_fc = args_to_op(
+        args.optimizer, args.learning_rate_fc, args.momentum_mass,
     )
-    opt_state = opt_init(init_params)
+    opt_init_fr, opt_update_fr, get_params_fr = args_to_op(
+        args.optimizer, args.learning_rate_fr, args.momentum_mass,
+    )
+    opt_state_fc = opt_init_fc(fc_init)
+    opt_state_fr = opt_init_fr(fr_init)
 
     loss_vals = []
     start = time.time()
 
     for i in range(args.num_iter):
-        opt_state, loss_val = update(i, opt_state)
+        opt_state_fc, opt_state_fr, loss_val = update(i, opt_state_fc, opt_state_fr)
         loss_vals.append(loss_val)
         print(loss_val)
     end = time.time()
@@ -261,8 +276,8 @@ def main():
     with open("{}.txt".format(output_file), "w") as f:
         wr = csv.writer(f, quoting=csv.QUOTE_ALL)
         wr.writerow(loss_vals)
-
-    CoilSet.write(coil_data, get_params(opt_state), write_file)
+    params = (get_params_fc(opt_state_fc), get_params_fr(opt_state_fr))
+    CoilSet.write(coil_data, params, write_file)
 
 
 if __name__ == "__main__":
