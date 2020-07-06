@@ -408,6 +408,7 @@ class CoilSet:
     def compute_alpha_1(coil_data, theta, fr):
         NC, NS, _, NFR, _, _, _, _, _, NR = coil_data
         alpha_1 = np.zeros((NC, NS + 1))
+        alpha_1 += NR / 2
         Ac = fr[0]
         As = fr[1]
         for m in range(NFR):
