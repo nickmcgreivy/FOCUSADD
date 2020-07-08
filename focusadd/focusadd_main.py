@@ -223,7 +223,7 @@ def get_coil_data(args):
 def get_initial_params(args):
     input_file = args.input_file
     if args.axis.lower() == "w7x":
-        assert args.num_zeta == 150
+        assert args.num_zeta == 300
         assert args.num_theta == 32
         assert args.num_coils == 50
         # need to assert that axis has right number of points
