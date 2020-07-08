@@ -206,27 +206,61 @@ def create_args_dict(args):
     args_dict["numRotate"] = args.num_rotate
     return args_dict
 
+def get_coil_data(args):
+    NC = args.num_coils
+    NS = args.num_segments
+    NFC = args.num_fourier_coils
+    NFR = args.num_fourier_rotate
+    ln = args.length_normal
+    lb = args.length_binormal
+    NNR = args.num_normal_rotate
+    NBR = args.num_binormal_rotate
+    rc = args.radius_coil
+    NR = args.num_rotate
+    return NC, NS, NFC, NFR, ln, lb, NNR, NBR, rc, NR
 
-def get_initial_params(filename, args):
-    surface = Surface(
-        filename,
-        args.num_zeta,
-        args.num_theta,
-        args.radius_surface,
-        res=args.axis_resolution,
-    )
+
+def get_initial_params(args):
     input_file = args.input_file
-
-    if input_file is not None:
-        coil_data, params = CoilSet.get_initial_data(
-            surface, input_file="coils/saved/{}.hdf5".format(input_file)
-        )
+    if args.axis.lower() == "w7x":
+        assert args.num_zeta == 150
+        assert args.num_theta == 32
+        assert args.num_coils == 50
+        # need to assert that axis has right number of points
+        r = np.load("surface/w7x_r_surf.npy")
+        nn = np.load("surface/w7x_nn_surf.npy")
+        sg = np.load("surface/w7x_sg_surf.npy")
+        surface_data = (r, nn, sg)
+        if input_file is None:
+            fc = np.load("surface/w7x_fc.npy")
+            fr = np.zeros((2, args.num_coils, args.num_fourier_rotate))
+            params = (fc, fr)
+            coil_data = get_coil_data(args)
+        else:
+            with tb.open_file(input_file, "r") as f:
+                coil_data = f.root.metadata[0]
+                fc = np.asarray(f.root.coilSeries[:, :, :])
+                fr = np.asarray(f.root.rotationSeries[:, :, :])
+                params = (fc, fr)
     else:
-        coil_data, params = CoilSet.get_initial_data(
-            surface, args_dict=create_args_dict(args)
+        filename = "./initFiles/axes/{}.txt".format(args.axis)
+        surface = Surface(
+            filename,
+            args.num_zeta,
+            args.num_theta,
+            args.radius_surface,
+            res=args.axis_resolution,
         )
-
-    return coil_data, params, surface
+        if input_file is not None:
+            coil_data, params = CoilSet.get_initial_data(
+                surface, input_file="{}.hdf5".format(input_file)
+            )
+        else:
+            coil_data, params = CoilSet.get_initial_data(
+                surface, args_dict=create_args_dict(args)
+            )
+            surface_data = (surface.get_r_central(), surface.get_nn(), surface.get_sg())
+    return coil_data, params, surface_data
 
 
 def main():
@@ -243,14 +277,13 @@ def main():
         return opt_update_fc(i, g_fc, opt_state_fc), opt_update_fr(i, g_fr, opt_state_fr), loss_val
 
     args = set_args()
-    axis_file = "./initFiles/axes/{}.txt".format(args.axis)
     output_file = args.output_file
     write_file = "{}.hdf5".format(output_file)
 
-    coil_data, init_params, surface = get_initial_params(axis_file, args)
+    coil_data, init_params, surface_data = get_initial_params(args)
     fc_init, fr_init = init_params
 
-    surface_data = (surface.get_r_central(), surface.get_nn(), surface.get_sg())
+    
 
     coil_output_func = partial(CoilSet.get_outputs, coil_data)
 
