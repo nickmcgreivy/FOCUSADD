@@ -224,7 +224,7 @@ def get_initial_params(args):
     input_file = args.input_file
     if args.axis.lower() == "w7x":
         assert args.num_zeta == 150
-        assert args.num_theta == 28
+        assert args.num_theta == 24
         assert args.num_coils == 50
         # need to assert that axis has right number of points
         r = np.load("surface/w7x_r_surf.npy")
