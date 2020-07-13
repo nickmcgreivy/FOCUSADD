@@ -90,8 +90,8 @@ class Poincare():
 		rs = np.asarray([])
 		zs = np.asarray([])
 		theta_i_f = [0, 2 * PI * N_poincare] # THIS LINE DOES TOO
-		I, dl, _, l, _ = CoilSet.get_outputs(coil_data, is_frenet, coil_params)
-		B_func = partial(Poincare.computeB, I, dl, l)
+		I, dl, r, _ = CoilSet.get_outputs(coil_data, coil_params)
+		B_func = partial(Poincare.computeB, I, dl, r)
 		step_partial = jit(partial(Poincare.step, B_func))
 		t_eval = np.linspace(0, 2 * PI * N_poincare, N_poincare + 1)
 
@@ -113,20 +113,28 @@ class Poincare():
 
 
 def main():
-	surface = Surface("../initFiles/axes/defaultAxis.txt", 128, 32, 1.0)
+	surface = Surface("../initFiles/axes/ellipticalAxis4Rotate.txt", 128, 32, 1.0)
 
-	radii = np.linspace(0.0,1.2,15)
+	radii = np.linspace(0.0,1.11111111,30)
 
 	start = time.time()
 
-	N = 400
-	coil_data, coil_params = CoilSet.get_initial_data(surface, input_file="../../tests/validateWithFocus/validate_focus.hdf5")
+	N = 500
+	coil_data, coil_params = CoilSet.get_initial_data(surface, input_file="../../tests/preresaxis/validate_with_focus/validate_focus.hdf5")
 	rs, zs = Poincare.getPoincarePoints(N, 0.0, radii, surface, False, coil_data, coil_params)
 
 	end = time.time()
 	print(end - start)
 
-	plt.plot(rs,zs,'ko', markersize=1)
+	font = {'family' : 'serif',
+        'weight' : 'normal',
+        'size'   : 12}
+
+	plt.rc('font', **font)
+
+	plt.plot(rs,zs,'ko', markersize=0.5, color='blue')
+	plt.xlabel("R [m]")
+	plt.ylabel("Z [m]")
 	plt.show()
 
 if __name__ == "__main__":
