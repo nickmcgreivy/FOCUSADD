@@ -6,7 +6,7 @@ from surface.Axis import Axis
 from coils.CoilSet import CoilSet
 import jax.numpy as np
 import numpy as numpy
-from lossFunctions.DefaultLoss import default_loss
+from lossFunctions.DefaultLoss import default_loss, lhd_saddle_B
 import math
 import csv
 from functools import partial
@@ -16,6 +16,7 @@ from surface.readAxis import read_axis
 from jax.config import config
 
 config.update("jax_enable_x64", True)
+config.update('jax_disable_jit', False)
 
 
 PI = math.pi
@@ -227,12 +228,12 @@ def get_initial_params(args):
         assert args.num_theta == 20
         assert args.num_coils == 50
         # need to assert that axis has right number of points
-        r = np.load("surface/w7x_r_surf.npy")
-        nn = np.load("surface/w7x_nn_surf.npy")
-        sg = np.load("surface/w7x_sg_surf.npy")
+        r = np.load("initFiles/w7x/w7x_r_surf.npy")
+        nn = np.load("initFiles/w7x/w7x_nn_surf.npy")
+        sg = np.load("initFiles/w7x/w7x_sg_surf.npy")
         surface_data = (r, nn, sg)
         if input_file is None:
-            fc = np.load("surface/w7x_fc.npy")
+            fc = np.load("initFiles/w7x/w7x_fc.npy")
             fr = np.zeros((2, args.num_coils, args.num_fourier_rotate))
             params = (fc, fr)
             coil_data = get_coil_data(args)
@@ -242,6 +243,22 @@ def get_initial_params(args):
                 fc = np.asarray(f.root.coilSeries[:, :, :])
                 fr = np.asarray(f.root.rotationSeries[:, :, :])
                 params = (fc, fr)
+    if args.axis.lower() == "lhd":
+        assert args.num_zeta == 200
+        assert args.num_theta == 40
+        assert args.num_coils == 2
+        assert args.num_fourier_coils == 10
+        r = np.load("initFiles/lhd/lhd_r_surf.npy")
+        nn = np.load("initFiles/lhd/lhd_nn_surf.npy")
+        sg = np.load("initFiles/lhd/lhd_sg_surf.npy")
+        surface_data = (r, nn, sg)
+        if input_file is None:
+            fc = np.load("initFiles/lhd/lhd_fc.npy")
+            fr = np.zeros((2, args.num_coils, args.num_fourier_rotate))
+            params = (fc, fr)
+            coil_data = get_coil_data(args)
+        else:
+            assert 1 == 0
     else:
         filename = "./initFiles/axes/{}.txt".format(args.axis)
         surface = Surface(
@@ -271,7 +288,7 @@ def main():
         params = fc, fr
         w_args = (args.weight_B, args.weight_length)
         loss_val, gradient = value_and_grad(
-            lambda params: default_loss(surface_data, coil_output_func, w_args, params)
+            lambda params: default_loss(surface_data, coil_output_func, w_args, params, B_extern=B_extern)
         )(params)
         g_fc, g_fr = gradient
         return opt_update_fc(i, g_fc, opt_state_fc), opt_update_fr(i, g_fr, opt_state_fr), loss_val
@@ -298,6 +315,11 @@ def main():
 
     loss_vals = []
     start = time.time()
+
+    if args.axis.lower() == "lhd":
+        B_extern = lhd_saddle_B(surface_data, 256)
+    else:
+        B_extern = None
 
     for i in range(args.num_iter):
         opt_state_fc, opt_state_fr, loss_val = update(i, opt_state_fc, opt_state_fr)

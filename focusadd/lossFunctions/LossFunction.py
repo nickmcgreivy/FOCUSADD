@@ -8,7 +8,7 @@ PI = math.pi
 
 class LossFunction:
     @jit
-    def quadratic_flux(r, I, dl, l, nn, sg):
+    def quadratic_flux(r, I, dl, l, nn, sg, B_extern = None):
         """ 
 
 		Computes the normalized quadratic flux over the whole surface.
@@ -30,6 +30,8 @@ class LossFunction:
 
 		"""
         B = LossFunction.biotSavart(r, I, dl, l)  # NZ x NT x 3
+        if B_extern is not None:
+            B = B + B_extern
         return (
             0.5
             * np.sum(np.sum(nn * B, axis=-1) ** 2 * sg)
