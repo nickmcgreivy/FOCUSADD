@@ -4,13 +4,14 @@ import tables as tb
 import sys
 sys.path.append("../../")
 from focusadd.coils.CoilSet import CoilSet
+from focusadd.lossFunctions.LossFunction import LossFunction
 
 
 def read_w7x_data():
-	r_surf = np.load("../../focusadd/surface/w7x_r_surf.npy")
-	nn = np.load("../../focusadd/surface/w7x_nn_surf.npy")
-	sg = np.load("../../focusadd/surface/w7x_sg_surf.npy")
-	fc_init = np.load("../../focusadd/surface/w7x_fc.npy")
+	r_surf = np.load("../../focusadd/initFiles/w7x/w7x_r_surf.npy")
+	nn = np.load("../../focusadd/initFiles/w7x/w7x_nn_surf.npy")
+	sg = np.load("../../focusadd/initFiles/w7x/w7x_sg_surf.npy")
+	fc_init = np.load("../../focusadd/initFiles/w7x/w7x_fc.npy")
 	return r_surf, nn, sg, fc_init
 
 
@@ -21,20 +22,8 @@ def plot_surface(r):
 	p = mlab.mesh(x,y,z,color=(0.8,0.0,0.0))
 	return p
 	
-def get_coil_data():
-	NC = 50
-	NS = 96
-	NFC = 10
-	NFR = 3
-	ln = 0.07
-	lb = 0.07
-	NNR = 2
-	NBR = 2
-	rc = 2.0
-	NR = 0
-	return NC, NS, NFC, NFR, ln, lb, NNR, NBR, rc, NR
+
 def get_all_coil_data(filename):
-	coil_data = get_coil_data()
 	with tb.open_file(filename, "r") as f:
 		coil_data = f.root.metadata[0]
 		fc = np.asarray(f.root.coilSeries[:, :, :])
@@ -48,6 +37,8 @@ def plot_coils_centroid(r_coils, color=(0.0, 0.0, 0.8)):
 	for ic in range(r_coils.shape[0]):
 		p = mlab.plot3d(r_coils[ic,:,0], r_coils[ic,:,1], r_coils[ic,:,2], tube_radius=0.02, color = color)#, line_width = 0.01,)
 	return p
+
+
 def plot_coils(r_coils, color=(0.0, 0.0, 0.8)):
 	r_coils = np.concatenate((r_coils[:, :, :, :, :], r_coils[:, 0:1, :, :, :]),axis=1)
 	for ic in range(r_coils.shape[0]):
@@ -57,10 +48,10 @@ def plot_coils(r_coils, color=(0.0, 0.0, 0.8)):
 	return p
 
 coil_data_fil, params_fil = get_all_coil_data("../../tests/w7x/w7x_fil.hdf5")
-_, _, r_fil, _ = CoilSet.get_outputs(coil_data_fil, params_fil)
+I_fil, dl_fil, r_fil, _ = CoilSet.get_outputs(coil_data_fil, params_fil)
 centroid_fil = CoilSet.get_r_centroid(coil_data_fil, params_fil)
 coil_data_fb, params_fb = get_all_coil_data("../../tests/w7x/w7x_fb.hdf5")
-_, _, r_fb, _ = CoilSet.get_outputs(coil_data_fb, params_fb)
+I_fb, dl_fb, r_fb, _ = CoilSet.get_outputs(coil_data_fb, params_fb)
 centroid_fb = CoilSet.get_r_centroid(coil_data_fb, params_fb)
 coil_data_rot, params_rot = get_all_coil_data("../../tests/w7x/w7x_rot.hdf5")
 _, _, r_rot, _ = CoilSet.get_outputs(coil_data_rot, params_rot)
@@ -81,3 +72,11 @@ mlab.savefig('w7x_centroids.png', figure=mlab.gcf())
 #mlab.savefig('w7x_centroids.pdf', figure=mlab.gcf())
 #mlab.savefig('w7x_centroids.eps', figure=mlab.gcf())
 mlab.clf()
+
+print(np.mean(np.abs(np.reshape(centroid_fil - centroid_rot,-1))))
+
+print("Finite build loss:")
+print(LossFunction.quadratic_flux(r_surf, I_fb, dl_fb, r_fb, nn, sg))
+print("Loss with filamentary centroid but finite build:")
+I_fil_fb, dl_fil_fb, r_fil_fb, _ = CoilSet.get_outputs(coil_data_fb, params_fil)
+print(LossFunction.quadratic_flux(r_surf, I_fil_fb, dl_fil_fb, r_fil_fb, nn, sg))

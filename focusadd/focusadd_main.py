@@ -16,7 +16,7 @@ from surface.readAxis import read_axis
 from jax.config import config
 
 config.update("jax_enable_x64", True)
-config.update('jax_disable_jit', False)
+config.update('jax_disable_jit', True)
 
 
 PI = math.pi
@@ -123,7 +123,7 @@ def set_args():
         "-lr",
         "--learning_rate_fc",
         help="Learning Rate of SGD, ODEFlow, Newtons Method",
-        default=0.0001,
+        default=0.00001,
         type=float,
     )
     parser.add_argument(
@@ -151,14 +151,14 @@ def set_args():
         "-w",
         "--weight_length",
         help="Length of weight paid to coils",
-        default=0.5,
+        default=0.0,
         type=float,
     )
     parser.add_argument(
         "-wb",
         "--weight_B",
         help="Length of weight paid to quadratic flux",
-        default=1e3,
+        default=1.0,
         type=float,
     )
     parser.add_argument(
@@ -243,7 +243,7 @@ def get_initial_params(args):
                 fc = np.asarray(f.root.coilSeries[:, :, :])
                 fr = np.asarray(f.root.rotationSeries[:, :, :])
                 params = (fc, fr)
-    if args.axis.lower() == "lhd":
+    elif args.axis.lower() == "lhd":
         assert args.num_zeta == 200
         assert args.num_theta == 40
         assert args.num_coils == 2

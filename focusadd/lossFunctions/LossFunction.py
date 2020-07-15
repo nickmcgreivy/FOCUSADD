@@ -35,7 +35,6 @@ class LossFunction:
         return (
             0.5
             * np.sum(np.sum(nn * B, axis=-1) ** 2 * sg)
-            / np.sum(np.sum(B * B, axis=-1) * sg)
         )  # NZ x NT
 
     @jit
