@@ -135,8 +135,8 @@ class CoilSet:
             f.create_array("/", "coilSeries", numpy.asarray(fc))
             f.create_array("/", "rotationSeries", numpy.asarray(fr))
 
-    @partial(jit, static_argnums=(0,))
-    def get_outputs(coil_data, params):
+    @partial(jit, static_argnums=(0, 1, ))
+    def get_outputs(coil_data, I_input, params):
         """ 
 		Takes a tuple of coil parameters and sets the parameters. When the 
 		parameters are reset, we need to update the other variables like the coil position, frenet frame, etc. 
@@ -148,7 +148,7 @@ class CoilSet:
         NC, NS, NF, NFR, ln, lb, NNR, NBR, rc, NR = coil_data
         theta = np.linspace(0, 2 * PI, NS + 1)
         fc, fr = params
-        I = np.ones(NC) / (NNR * NBR)
+        I = I_input / (NNR * NBR)
         # COMPUTE COIL VARIABLES
         r_centroid = CoilSet.compute_r_centroid(coil_data, fc, theta)
         r1 = CoilSet.compute_x1y1z1(coil_data, fc, theta)

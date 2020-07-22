@@ -16,7 +16,7 @@ from surface.readAxis import read_axis
 from jax.config import config
 
 config.update("jax_enable_x64", True)
-config.update('jax_disable_jit', True)
+config.update('jax_disable_jit', False)
 
 
 PI = math.pi
@@ -300,9 +300,12 @@ def main():
     coil_data, init_params, surface_data = get_initial_params(args)
     fc_init, fr_init = init_params
 
-    
+    if args.axis.lower() == "lhd":
+        I = np.load("initFiles/lhd/lhd_I_c.npy")
+    else:
+        I = np.ones(args.num_coils)
 
-    coil_output_func = partial(CoilSet.get_outputs, coil_data)
+    coil_output_func = partial(CoilSet.get_outputs, coil_data, I)
 
     opt_init_fc, opt_update_fc, get_params_fc = args_to_op(
         args.optimizer, args.learning_rate_fc, args.momentum_mass,
@@ -333,6 +336,7 @@ def main():
         wr.writerow(loss_vals)
     params = (get_params_fc(opt_state_fc), get_params_fr(opt_state_fr))
     CoilSet.write(coil_data, params, write_file)
+
 
 
 if __name__ == "__main__":
