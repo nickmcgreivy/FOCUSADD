@@ -1,5 +1,5 @@
 # FOCUSADD
-**F**lexible **O**ptimized **Cu**rves in **S**pace with **A**utomatic **D**ifferentiation
+**F**lexible **O**ptimized **Cu**rves in **S**pace with **A**utomatic **D**ifferentiation and Finite Buil**D**
 
 ## What is FOCUSADD?
 
