@@ -16,7 +16,7 @@ from surface.readAxis import read_axis
 from jax.config import config
 
 config.update("jax_enable_x64", True)
-config.update('jax_disable_jit', True)
+config.update('jax_disable_jit', False)
 
 
 PI = math.pi
