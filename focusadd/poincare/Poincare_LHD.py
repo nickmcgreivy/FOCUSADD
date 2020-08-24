@@ -1,4 +1,5 @@
 import jax.numpy as np
+import numpy as npo
 from jax.experimental.ode import odeint
 from functools import partial
 from jax.config import config
@@ -7,10 +8,12 @@ from jax import jit
 import matplotlib.pyplot as plt
 import sys
 import time
+import tables as tb
 sys.path.append("..")
 
 from surface.Surface import Surface
 from coils.CoilSet import CoilSet
+from lossFunctions.DefaultLoss import default_loss, lhd_saddle_B
 config.update("jax_enable_x64", True)
 
 
@@ -55,7 +58,7 @@ class Poincare():
 		return np.asarray((Fr, Fz))
 
 
-	def getPoincarePoints(N_poincare, zeta, radii, surface, is_frenet, coil_data, coil_params):
+	def getPoincarePoints(N_poincare, zeta, radii, is_frenet, coil_data, coil_params, B_extern):
 		"""
 
 			NOTE: THIS ONLY WORKS FOR zeta = 0 RIGHT NOW
@@ -77,15 +80,7 @@ class Poincare():
 
 		"""
 
-		axis = surface.get_axis()
-		x_axis, y_axis, z_axis = axis.get_r_from_zeta(zeta)
-		r_axis = np.sqrt(x_axis ** 2 + y_axis ** 2)
-		v1, _ = axis.get_frame()
-		v1 = v1[0, :] # at zeta = 0 THIS LINE BREAKS THE CODE
-		ep = axis.epsilon
-		saep = axis.a * surface.s * np.sqrt(ep)
-		ct = np.cos(zeta)
-		st = np.sin(zeta)
+		r_axis = 3.7
 
 		rs = np.asarray([])
 		zs = np.asarray([])
@@ -96,8 +91,7 @@ class Poincare():
 
 		@jit
 		def update(r):
-			v1_normalized = r * saep * v1
-			y = np.asarray((r_axis + ct * v1_normalized[0] + st * v1_normalized[1], z_axis + v1_normalized[2]))
+			y = np.asarray((r_axis + r, 0))
 			sol = odeint(step_partial, y, t_eval)
 			return sol[:, 0], sol[:, 1]
 
@@ -105,43 +99,40 @@ class Poincare():
 		for r in radii:
 			print(r)
 			r_new, z_new = update(r)
+			print(r_new)
 			rs = np.concatenate((rs, r_new))
 			zs = np.concatenate((zs, z_new))
 
 		return rs, zs
 
-
-
 def main():
-	surface = Surface("../initFiles/axes/ellipticalAxis4Rotate.txt", 128, 32, 1.0)
 
-	radii = np.linspace(0.0,1.11111111,15)
+	radii = np.linspace(0.0,0.1,5)
 
 	start = time.time()
 
-	N = 100
-	coil_data, coil_params = CoilSet.get_initial_data(surface, input_file="../../tests/postresaxis/triple_comparison/fb.hdf5")
-	rs, zs = Poincare.getPoincarePoints(N, 0.0, radii, surface, False, coil_data, coil_params)
+	N = 5
+	r = np.load("../initFiles/lhd/lhd_r_surf.npy")
+	nn = np.load("../initFiles/lhd/lhd_nn_surf.npy")
+	sg = np.load("../initFiles/lhd/lhd_sg_surf.npy")
+	surface_data = (r, nn, sg)
+	B_extern = lhd_saddle_B(surface_data, 256)
 
+	def get_all_coil_data(filename):
+		with tb.open_file(filename, "r") as f:
+			coil_data = f.root.metadata[0]
+			fc = np.asarray(f.root.coilSeries[:, :, :])
+			fr = np.asarray(f.root.rotationSeries[:, :]) # NEEDS TO BE EDITED
+			params = (fc, fr)
+		return coil_data, params
+
+	coil_data, coil_params = get_all_coil_data("../../tests/lhd/scan/lhd_l2.hdf5")
+	rs, zs = Poincare.getPoincarePoints(N, 0.0, radii, False, coil_data, coil_params, B_extern) 
 	end = time.time()
 	print(end - start)
 
-
-	"""
-	font = {'family' : 'serif',
-        'weight' : 'normal',
-        'size'   : 12}
-
-	plt.rc('font', **font)
-
-	plt.plot(rs,zs,'ko', markersize=0.5, color='blue')
-	plt.xlabel("R [m]")
-	plt.ylabel("Z [m]")
-	plt.show()
-	"""
-
-	np.save("rs.npy", rs)
-	np.save("zs.npy", zs)
+	npo.save("rs_LHD.npy", npo.asarray(rs))
+	npo.save("zs_LHD.npy", npo.asarray(zs))
 
 if __name__ == "__main__":
 	main()

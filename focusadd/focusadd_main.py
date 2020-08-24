@@ -288,7 +288,7 @@ def main():
         params = fc, fr
         w_args = (args.weight_B, args.weight_length)
         loss_val, gradient = value_and_grad(
-            lambda params: default_loss(surface_data, coil_output_func, w_args, params, B_extern=B_extern)
+            lambda params: default_loss(surface_data, coil_output_func, w_args, params, B_extern=B_extern, I = I)
         )(params)
         g_fc, g_fr = gradient
         return opt_update_fc(i, g_fc, opt_state_fc), opt_update_fr(i, g_fr, opt_state_fr), loss_val
@@ -305,7 +305,7 @@ def main():
     else:
         I = np.ones(args.num_coils)
 
-    coil_output_func = partial(CoilSet.get_outputs, coil_data, I)
+    coil_output_func = partial(CoilSet.get_outputs, coil_data)
 
     opt_init_fc, opt_update_fc, get_params_fc = args_to_op(
         args.optimizer, args.learning_rate_fc, args.momentum_mass,

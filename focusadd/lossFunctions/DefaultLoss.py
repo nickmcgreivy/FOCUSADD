@@ -13,7 +13,7 @@ config.update("jax_enable_x64", True)
 PI = math.pi
 
 
-def default_loss(surface_data, params_to_data, w_args, params, B_extern = None):
+def default_loss(surface_data, params_to_data, w_args, params, B_extern = None, I = None):
 	""" 
 	Computes the default loss: int (B dot n)^2 dA + weight_length * len(coils) 
 
@@ -24,7 +24,7 @@ def default_loss(surface_data, params_to_data, w_args, params, B_extern = None):
 	"""
 	w_B, w_L = w_args
 	r_surf, nn, sg = surface_data
-	I, dl, r, total_length = params_to_data(params)
+	I, dl, r, total_length = params_to_data(params, I = I)
 
 	B_loss_val = LossFunction.quadratic_flux(r_surf, I, dl, r, nn, sg, B_extern = B_extern)
 
@@ -33,8 +33,8 @@ def default_loss(surface_data, params_to_data, w_args, params, B_extern = None):
 def lhd_saddle_B(surface_data, NS):
 	""" Only to be called once """
 	r_surf, _, _ = surface_data
-	fc_s = np.load("initFiles/lhd/lhd_fc_saddle.npy")
-	I_s = np.load("initFiles/lhd/lhd_I_saddle.npy")
+	fc_s = np.load("/Users/nmcgreiv/research/ad/FOCUSADD/focusadd/initFiles/lhd/lhd_fc_saddle.npy")
+	I_s = np.load("/Users/nmcgreiv/research/ad/FOCUSADD/focusadd/initFiles/lhd/lhd_I_saddle.npy")
 	theta = np.linspace(0, 2 * PI, NS + 1)
 	NF = fc_s.shape[2]
 	NC = fc_s.shape[1]
