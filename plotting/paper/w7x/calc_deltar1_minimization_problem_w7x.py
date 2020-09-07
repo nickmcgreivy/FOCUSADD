@@ -1,4 +1,3 @@
-from mayavi import mlab
 import jax.numpy as np
 import tables as tb
 import sys
@@ -42,25 +41,27 @@ def find_minimum_theta_scalar(fc_new, r_fil, theta_i):
 	f_prime = grad(f)
 	f_primeprime = grad(f_prime)
 	for n in range(n_iter):
-		theta_i = theta_i - alpha * np.nan_to_num(f_prime(theta_i) / (f_primeprime(theta_i) + epsilon))
+		new_ep = epsilon * np.exp(-n / 15)
+		theta_i = theta_i - alpha * np.nan_to_num(f_prime(theta_i) / (f_primeprime(theta_i) + new_ep))
 	return theta_i
 
 find_minimum_theta_single_coil = vmap(find_minimum_theta_scalar, (None, 0, 0), 0)
 find_minimum_theta_all_coils = vmap(find_minimum_theta_single_coil, (1, 0, 0), 0)
 
 NS = 64
-n_iter = 100
-alpha = 0.8
+n_iter = 120
+alpha = 0.9
 
-_, params_fil = get_all_coil_data("../../../tests/w7x/scan2/w7x_l0.hdf5")
+_, params_fil = get_all_coil_data("../../../tests/w7x/scanold2/w7x_l0.hdf5")
 fc_fil, _ = params_fil
 NC = fc_fil.shape[1]
 r_fil = filament_real_space(fc_fil, np.tile(np.linspace(0, 2 * np.pi, NS+1)[:-1], (NC,1)))
 
-
-nums =  ["0", "6",    "1",   "7",    "9",  "2",  "8",    "5",   "3"  ]
-sizes = [0.0, 0.0175, 0.035, 0.0525, 0.06, 0.07, 0.0875, 0.105, 0.14 ]
-eps =   [0.0, 3e4,    1e4,   2e3,    2e3,  1e3,  5e2,    4e2,   2e2  ]
+nums =  ["0", "1",  "2",  "3",  "4",  "5",  "6", "7",  "8" , "9"  ]
+sizes = [0.0, 0.02, 0.04, 0.06, 0.07, 0.08, 0.1, 0.12, 0.14, 0.16 ]
+eps =   [0.0, 1e5,  1e5,  1e4,  3e5,  1e4,  1e5, 1e4,  1e5,  1e4  ]
+n_iters = [120, 120,120,  120,  120,  120,  120, 120,  120,  120  ]
+n_iter = 120
 epsilon = 0.0
 
 mean_delta_rs = [0.0]
@@ -68,8 +69,9 @@ max_delta_rs = [0.0]
 
 for i in range(1,len(nums)):
 	epsilon = eps[i]
+	n_iter = n_iters[i]
 	theta_i = np.tile(np.linspace(0, 2 * np.pi, NS+1)[:-1], (NC,1))
-	_, params_new = get_all_coil_data("../../../tests/w7x/scan2/w7x_l{}.hdf5".format(nums[i]))
+	_, params_new = get_all_coil_data("../../../tests/w7x/scanold2/w7x_l{}.hdf5".format(nums[i]))
 	fc_new, _ = params_new
 	theta_i = find_minimum_theta_all_coils(fc_new, r_fil, theta_i)
 
