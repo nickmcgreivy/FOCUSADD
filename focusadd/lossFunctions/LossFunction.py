@@ -70,3 +70,15 @@ class LossFunction:
             top / bottom[:, :, :, :, :, :, np.newaxis], axis=(0, 3, 4, 5)
         )  # NZ x NT x 3
         return B
+
+    @jit
+    def normalized_error(r, I, dl, l, nn, sg, B_extern = None):
+        B = LossFunction.biotSavart(r, I, dl, l)  # NZ x NT x 3
+        if B_extern is not None:
+            B = B + B_extern
+
+        B_n = np.abs( np.sum(nn * B, axis=-1) )
+        B_mag = np.linalg.norm(B, axis=-1)
+        A = np.sum(sg)
+
+        return np.sum( (B_n / B_mag) * sg ) / A

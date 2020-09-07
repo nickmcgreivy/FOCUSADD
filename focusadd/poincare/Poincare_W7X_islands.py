@@ -21,6 +21,7 @@ PI = np.pi
 
 class Poincare():
 
+	@jit
 	def computeB(I, dl, l, r, zeta, z):
 		"""
 			Inputs:
@@ -58,7 +59,7 @@ class Poincare():
 		return np.asarray((Fr, Fz))
 
 
-	def getPoincarePoints(N_poincare, zeta, radii, is_frenet, coil_data, coil_params):
+	def getPoincarePoints(N_poincare, zeta, is_frenet, coil_data, coil_params):
 		"""
 
 			NOTE: THIS ONLY WORKS FOR zeta = 0 RIGHT NOW
@@ -80,7 +81,10 @@ class Poincare():
 
 		"""
 
-		r_axis = 5.95
+		#rs_init = [5.6,  5.6,    5.45,  5.46,  5.6, 5.6,  5.48,  5.49]
+		#zs_init = [0.89, -0.89, 0.73, -0.71, 0.92, -0.92, 0.73, -0.71]
+		rs_init = [5.46,  5.47]
+		zs_init = [0.73, -0.71]
 
 		rs = np.asarray([])
 		zs = np.asarray([])
@@ -90,15 +94,16 @@ class Poincare():
 		t_eval = np.linspace(0, 2 * PI * N_poincare, N_poincare + 1)
 
 		@jit
-		def update(r):
-			y = np.asarray((r_axis + r, 0))
+		def update(r,z):
+			y = np.asarray((r, z))
 			sol = odeint(step_partial, y, t_eval)
 			return sol[:, 0], sol[:, 1]
 
 
-		for r in radii:
-			print(r)
-			r_new, z_new = update(r)
+		for i in range(len(rs_init)):
+			r = rs_init[i]
+			z = zs_init[i]
+			r_new, z_new = update(r, z)
 			print(r_new)
 			rs = np.concatenate((rs, r_new))
 			zs = np.concatenate((zs, z_new))
@@ -107,9 +112,8 @@ class Poincare():
 
 def main():
 
-	radii = np.linspace(0.0,0.28,20)
 
-	N = 250
+	N = 60
 
 	def get_all_coil_data(filename):
 		with tb.open_file(filename, "r") as f:
@@ -124,17 +128,19 @@ def main():
 	coil_data_fb2, coil_params_fb2 = get_all_coil_data("../../tests/w7x/scanold2/w7x_l7.hdf5") # 0.12
 
 	"""
-	rs_fb, zs_fb = Poincare.getPoincarePoints(N, 0.0, radii, False, coil_data_fb, coil_params_fb) 
-	npo.save("rs_w7x_fb.npy", npo.asarray(rs_fb))
-	npo.save("zs_w7x_fb.npy", npo.asarray(zs_fb))
+	rs_fb, zs_fb = Poincare.getPoincarePoints(N, 0.0, False, coil_data_fb, coil_params_fb) 
+	npo.save("rs_w7x_fb_islands.npy", npo.asarray(rs_fb))
+	npo.save("zs_w7x_fb_islands.npy", npo.asarray(zs_fb))
 
-	rs_fil, zs_fil = Poincare.getPoincarePoints(N, 0.0, radii, False, coil_data_fb, coil_params_fil) 
-	npo.save("rs_w7x_fil.npy", npo.asarray(rs_fil))
-	npo.save("zs_w7x_fil.npy", npo.asarray(zs_fil))
+	rs_fil, zs_fil = Poincare.getPoincarePoints(N, 0.0, False, coil_data_fb, coil_params_fil) 
+	npo.save("rs_w7x_fil_islands.npy", npo.asarray(rs_fil))
+	npo.save("zs_w7x_fil_islands.npy", npo.asarray(zs_fil))
 	"""
-	rs_fil2, zs_fil2 = Poincare.getPoincarePoints(N, 0.0, radii, False, coil_data_fb2, coil_params_fil) 
-	npo.save("rs_w7x_fil2.npy", npo.asarray(rs_fil2))
-	npo.save("zs_w7x_fil2.npy", npo.asarray(zs_fil2))
+	
+	
+	rs_fil2, zs_fil2 = Poincare.getPoincarePoints(N, 0.0, False, coil_data_fb2, coil_params_fil) 
+	npo.save("rs_w7x_fil2_islands2.npy", npo.asarray(rs_fil2))
+	npo.save("zs_w7x_fil2_islands2.npy", npo.asarray(zs_fil2))
 
 if __name__ == "__main__":
 	main()

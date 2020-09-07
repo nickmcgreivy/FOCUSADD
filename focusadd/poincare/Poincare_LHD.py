@@ -21,6 +21,12 @@ PI = np.pi
 
 class Poincare():
 
+	def compute_total_B(I_c, dl_c, l_c, I_s, dl_s, l_s, r, zeta, z):
+		B_c_r, B_c_zeta, B_c_z = Poincare.computeB(I_c, dl_c, l_c, r, zeta, z)
+		B_s_r, B_s_zeta, B_s_z = Poincare.computeB(I_s, dl_s, l_s, r, zeta, z)
+		return B_c_r + B_s_r, B_c_zeta + B_s_zeta, B_c_z + B_s_z
+
+
 	def computeB(I, dl, l, r, zeta, z):
 		"""
 			Inputs:
@@ -58,7 +64,7 @@ class Poincare():
 		return np.asarray((Fr, Fz))
 
 
-	def getPoincarePoints(N_poincare, zeta, radii, is_frenet, coil_data, coil_params, B_extern):
+	def getPoincarePoints(N_poincare, zeta, radii, is_frenet, coil_data, coil_params):
 		"""
 
 			NOTE: THIS ONLY WORKS FOR zeta = 0 RIGHT NOW
@@ -80,12 +86,22 @@ class Poincare():
 
 		"""
 
-		r_axis = 3.7
+		r_axis = 3.63
 
 		rs = np.asarray([])
 		zs = np.asarray([])
-		I, dl, r, _ = CoilSet.get_outputs(coil_data, coil_params)
-		B_func = partial(Poincare.computeB, I, dl, r)
+		I_c = np.load("../initFiles/lhd/lhd_I_c.npy")
+		I_c, dl_c, r_c, _ = CoilSet.get_outputs(coil_data, coil_params, I = I_c)
+		fc_s = np.load("/Users/nmcgreiv/research/ad/FOCUSADD/focusadd/initFiles/lhd/lhd_fc_saddle.npy")
+		I_s = np.load("/Users/nmcgreiv/research/ad/FOCUSADD/focusadd/initFiles/lhd/lhd_I_saddle.npy")
+		NS_s = 96
+		theta = np.linspace(0, 2 * PI, NS_s + 1)
+		NF_s = fc_s.shape[2]
+		NC_s = fc_s.shape[1]
+		coil_data = NC_s, NS_s, NF_s, 0, 0, 0, 0, 0, 0, 0
+		r_s = CoilSet.compute_r_centroid(coil_data, fc_s, theta)
+		dl_s = CoilSet.compute_x1y1z1(coil_data, fc_s, theta) * (2 * PI / NS_s)
+		B_func = partial(Poincare.compute_total_B, I_c, dl_c, r_c, I_s, dl_s[:,:,None,None,:], r_s[:,:,None,None,:])
 		step_partial = jit(partial(Poincare.step, B_func))
 		t_eval = np.linspace(0, 2 * PI * N_poincare, N_poincare + 1)
 
@@ -107,16 +123,13 @@ class Poincare():
 
 def main():
 
-	radii = np.linspace(0.0,0.1,5)
+	radii = np.linspace(0.0,0.45,20)
 
-	start = time.time()
-
-	N = 5
+	N = 50
 	r = np.load("../initFiles/lhd/lhd_r_surf.npy")
 	nn = np.load("../initFiles/lhd/lhd_nn_surf.npy")
 	sg = np.load("../initFiles/lhd/lhd_sg_surf.npy")
 	surface_data = (r, nn, sg)
-	B_extern = lhd_saddle_B(surface_data, 256)
 
 	def get_all_coil_data(filename):
 		with tb.open_file(filename, "r") as f:
@@ -126,13 +139,21 @@ def main():
 			params = (fc, fr)
 		return coil_data, params
 
-	coil_data, coil_params = get_all_coil_data("../../tests/lhd/scan/lhd_l2.hdf5")
-	rs, zs = Poincare.getPoincarePoints(N, 0.0, radii, False, coil_data, coil_params, B_extern) 
-	end = time.time()
-	print(end - start)
+	coil_data_fil, coil_params_fil = get_all_coil_data("../../tests/lhd/scan/lhd_l0.hdf5")
+	rs, zs = Poincare.getPoincarePoints(N, 0.0, radii, False, coil_data_fil, coil_params_fil) 
+	npo.save("rs_LHD_fil.npy", npo.asarray(rs))
+	npo.save("zs_LHD_fil.npy", npo.asarray(zs))
 
-	npo.save("rs_LHD.npy", npo.asarray(rs))
-	npo.save("zs_LHD.npy", npo.asarray(zs))
+	coil_data_fb, coil_params_fb = get_all_coil_data("../../tests/lhd/scan/lhd_l4.hdf5")
+	rs, zs = Poincare.getPoincarePoints(N, 0.0, radii, False, coil_data_fb, coil_params_fb) 
+	npo.save("rs_LHD_fb4.npy", npo.asarray(rs))
+	npo.save("zs_LHD_fb4.npy", npo.asarray(zs))
+
+
+	coil_data_fil, coil_params_fil = get_all_coil_data("../../tests/lhd/scan/lhd_l0.hdf5")
+	rs, zs = Poincare.getPoincarePoints(N, 0.0, radii, False, coil_data_fb, coil_params_fil) 
+	npo.save("rs_LHD_fil4.npy", npo.asarray(rs))
+	npo.save("zs_LHD_fil4.npy", npo.asarray(zs))
 
 if __name__ == "__main__":
 	main()
