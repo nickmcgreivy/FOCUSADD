@@ -243,6 +243,26 @@ def get_initial_params(args):
                 fc = np.asarray(f.root.coilSeries[:, :, :])
                 fr = np.asarray(f.root.rotationSeries[:, :, :])
                 params = (fc, fr)
+    elif args.axis.lower() == "w7x_highres":
+        assert args.num_zeta == 150
+        assert args.num_theta == 20
+        assert args.num_coils == 50
+        # need to assert that axis has right number of points
+        r = np.load("initFiles/w7x/w7x_highres_r_surf.npy")
+        nn = np.load("initFiles/w7x/w7x_highres_nn_surf.npy")
+        sg = np.load("initFiles/w7x/w7x_highres_sg_surf.npy")
+        surface_data = (r, nn, sg)
+        if input_file is None:
+            fc = np.load("initFiles/w7x/w7x_fc.npy")
+            fr = np.zeros((2, args.num_coils, args.num_fourier_rotate))
+            params = (fc, fr)
+            coil_data = get_coil_data(args)
+        else:
+            with tb.open_file(input_file, "r") as f:
+                coil_data = f.root.metadata[0]
+                fc = np.asarray(f.root.coilSeries[:, :, :])
+                fr = np.asarray(f.root.rotationSeries[:, :, :])
+                params = (fc, fr)
     elif args.axis.lower() == "lhd":
         assert args.num_zeta == 200
         assert args.num_theta == 40
